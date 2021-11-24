@@ -20,7 +20,7 @@ namespace httplite
 
 		// ...look in our buffer for the all-important \r\n\r\n with trusty strstr...
 		m_headersEnd = const_cast<char*>(strstr((const char*)m_buffer.data(), "\r\n\r\n"));
-		m_buffer.pop_back(); // strip our extra null byte
+		m_buffer.pop_back(); // strip our extra null byte now that we're done with it
 		if (m_headersEnd == nullptr)
 		{
 			// ...buffer is incomplete
@@ -34,7 +34,7 @@ namespace httplite
 			// Capture where the remainder starts and what's left, if any
 			m_remainderStart = reinterpret_cast<byte*>(m_headersEnd) + 4;
 			m_remainderCount = m_buffer.size() - (m_remainderStart - m_buffer.data());
-			if (m_remainderCount == 0)
+			if (m_remainderCount == 0) // don't just point any old place
 				m_remainderStart = nullptr;
 			return true;
 		}

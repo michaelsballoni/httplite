@@ -15,12 +15,12 @@ namespace httplite
 
 		/// <summary>
 		/// Call OnMoreData as data comes in, until it returns true, 
-		/// or GetSize exceeds your threshold for pain.
+		/// or GetSize exceeds your threshold of pain of buffer memory usage.
 		/// Then you can call GetHeaders and GetRemainder to tease out the goodies.
 		/// </summary>
 		/// <param name="data">pointer to new data</param>
 		/// <param name="count">amount of new data</param>
-		/// <returns></returns>
+		/// <returns>true if headers fully read</returns>
 		bool OnMoreData(const uint8_t* data, const size_t count);
 
 		size_t GetSize() const
