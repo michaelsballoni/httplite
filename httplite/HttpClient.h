@@ -13,7 +13,6 @@ namespace httplite
 		Response ProcessRequest(const Request& request);
 
 	private:
-		SocketUse m_socketUse;
-		SOCKET m_socket = INVALID_SOCKET;
+		SOCKET m_socket;
 	};
 }

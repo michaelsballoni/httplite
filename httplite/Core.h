@@ -36,6 +36,13 @@ namespace httplite
 		}
 	};
 
+	inline std::string num2str(double num)
+	{
+		std::stringstream ss;
+		ss << num;
+		return ss.str();
+	}
+
 	inline std::string toNarrowStr(const std::wstring& str)
 	{
 		std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
