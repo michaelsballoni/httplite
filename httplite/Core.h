@@ -87,9 +87,9 @@ namespace httplite
 
 	struct Response
 	{
-		std::uint16_t Code; // 200, 500
-		std::string Status; // Code + decimal part, 500.12
-		std::wstring Description; // 200 OK
+		std::uint16_t Code = 0; // 500
+		std::string Status; // Code + "decimal" part, 500.100
+		std::string Description; // 500.100 Internal ASP Error
 		std::unordered_map<std::string, std::wstring> Headers;
 		std::optional<Buffer> Payload;
 	};
