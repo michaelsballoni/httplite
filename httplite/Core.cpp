@@ -25,7 +25,7 @@ std::string httplite::UrlEncoded(const std::wstring& part)
     return retVal;
 }
 
-std::wstring httplite::UrlDecoded(std::string part)
+std::wstring httplite::UrlDecoded(const std::string& part)
 {
     std::wstring retVal;
     for (size_t i = 0; i < part.length(); ++i) 

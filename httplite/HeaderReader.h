@@ -40,11 +40,11 @@ namespace httplite
 		}
 
 	private:
-		buffer m_buffer;
+		std::vector<uint8_t> m_buffer;
 
 		char* m_headersEnd;
 
-		byte* m_remainderStart;
+		uint8_t* m_remainderStart;
 		size_t m_remainderCount;
 	};
 }
