@@ -55,44 +55,13 @@ namespace httplite
 		return converter.from_bytes(str);
 	}
 
-	struct Buffer
+	inline std::string toLower(const std::string& str)
 	{
-		Buffer() {}
-		Buffer(const std::wstring& str)
-		{
-			std::string utf8 = toNarrowStr(str);
-			Bytes.resize(utf8.length());
-			memcpy(Bytes.data(), utf8.c_str(), utf8.length());
-		}
-
-		std::wstring ToString()
-		{
-			Bytes.push_back(0);
-			std::string utf8 = reinterpret_cast<const char*>(Bytes.data());
-			Bytes.pop_back();
-			return toWideStr(utf8);
-		}
-
-		std::vector<uint8_t> Bytes;
-	};
-
-	struct Request
-	{
-		std::string Verb;
-		std::vector<std::wstring> PathParts;
-		std::unordered_map<std::wstring, std::wstring> QueryParams;
-		std::unordered_map<std::string, std::string> Headers;
-		std::optional<Buffer> Payload;
-	};
-
-	struct Response
-	{
-		std::uint16_t Code = 0; // 500
-		std::string Status; // Code + "decimal" part, 500.100
-		std::string Description; // 500.100 Internal ASP Error
-		std::unordered_map<std::string, std::wstring> Headers;
-		std::optional<Buffer> Payload;
-	};
+		std::string retVal;
+		for (auto c : str)
+			retVal += static_cast<char>(tolower(c));
+		return retVal;
+	}
 
 	std::string UrlEncoded(const std::wstring& part);
 	std::wstring UrlDecoded(const std::string& part);

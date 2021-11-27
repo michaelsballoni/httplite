@@ -25,49 +25,8 @@ namespace httplite
 		try
 #endif
 		{
-			std::string headers;
-
-			headers += request.Verb;
-			headers += ' ';
-			if (request.PathParts.empty())
 			{
-				headers += '/';
-			}
-			else
-			{
-				for (const auto& part : request.PathParts)
-				{
-					headers += "/" + UrlEncoded(part);
-				}
-			}
-			if (!request.QueryParams.empty())
-			{
-				headers += '?';
-				bool anyYet = false;
-				for (const auto& queryIt : request.QueryParams)
-				{
-					if (anyYet)
-						headers += '&';
-					anyYet = true;
-
-					headers += UrlEncoded(queryIt.first) + "=" + UrlEncoded(queryIt.second);
-				}
-			}
-			headers += " HTTP/1.0\r\n";
-
-			for (const auto& headerIt : request.Headers)
-			{
-				headers += headerIt.first + ": " + headerIt.second + "\r\n";
-			}
-
-			if (request.Payload.has_value())
-				headers += "Content-Length: " + num2str(request.Payload->Bytes.size()) + "\r\n";
-
-			headers += "Connection: keep-alive\r\n";
-
-			headers += "\r\n";
-
-			{
+				std::string headers = request.GetTotalHeader();
 				const char* headersData = headers.c_str();
 				int toSend = static_cast<int>(headers.length());
 				int sentYet = 0;
@@ -118,47 +77,51 @@ namespace httplite
 			Response response;
 			{
 				const char* headerStart = reader.GetHeaders();
-				const char* headerEnd = strstr(headerStart, "\r\n");
-				if (headerEnd == nullptr)
-					throw NetworkError("HttpClient: Invalid response header");
+				response.ReadHeader(headerStart);
 
-				const char* spaceAfterHttp = strstr(headerStart, " ");
-				if (spaceAfterHttp == nullptr)
-					throw NetworkError("HttpClient: Invalid response line");
-
-				std::string statusLine(spaceAfterHttp, headerEnd);
-				size_t statusSpace = statusLine.find(' ');
-				if (statusSpace == std::string::npos)
-					throw NetworkError("HttpClient: Invalid response status");
-
-				std::string numberPart = statusLine.substr(0, statusSpace);
-				std::string descriptionPart = statusLine.substr(statusSpace + 1);
-
-				int code = ::atoi(numberPart.c_str());
-				if (code <= 0)
-					throw NetworkError("HttpClient: Invalid response code");
-				response.Code = static_cast<uint16_t>(code);
-
-				response.Status = numberPart;
-				response.Description = descriptionPart;
-
-				headerStart = headerEnd + 2;
-
-				while (true)
+				size_t remainderSize = 0;
+				const uint8_t* remainderBytes = reader.GetRemainder(remainderSize);
+				if (remainderSize > 0)
 				{
-					headerEnd = strstr(headerStart, "\r\n");
-					if (headerEnd == nullptr)
-						break;
-
-					std::string line(headerStart, headerEnd);
-					if (line.empty())
-						break;
-
-					// FORNOW - Continue here
-
-					headerStart = headerEnd + 2;
+					response.Payload.emplace(Buffer());
+					response.Payload->Bytes.resize(remainderSize);
+					memcpy(response.Payload->Bytes.data(), remainderBytes, remainderSize);
 				}
+
+				bool isConnectionClose = response.IsConnectionClose();
+				int64_t contentLength = isConnectionClose ? -1 : response.ContentLength();
+
+				if ((contentLength > 0 || isConnectionClose) && !response.Payload.has_value())
+					response.Payload.emplace(Buffer());
+				auto& payloadBytes = response.Payload->Bytes;
+				if (contentLength > 0)
+					payloadBytes.reserve(size_t(contentLength));
+
+				size_t recvYet = remainderSize;
+				int64_t totalToRecv = contentLength;
+				while (isConnectionClose || recvYet < totalToRecv)
+				{
+					int recvd = ::recv(m_socket, reinterpret_cast<char*>(recvBuffer), sizeof(recvBuffer), 0);
+					if (recvd == 0)
+					{
+						if (isConnectionClose)
+							break;
+						else
+							throw NetworkError("HttpClient: Server closed connection while receiving response payload");
+					}
+					if (recvd < 0)
+						throw NetworkError("HttpClient: Error receiving response payload");
+
+					payloadBytes.resize(payloadBytes.size() + recvd);
+					memcpy(payloadBytes.data() + payloadBytes.size() - recvd, recvBuffer, recvd);
+
+					recvYet += recvd;
+				}
+
+				if (isConnectionClose)
+					Disconnect();
 			}
+
 			return response;
 		}
 #ifndef _DEBUG
@@ -203,4 +166,3 @@ namespace httplite
 		m_isConnected = false;
 	}
 }
-

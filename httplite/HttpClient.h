@@ -2,6 +2,9 @@
 
 #include "Core.h"
 
+#include "Request.h"
+#include "Response.h"
+
 namespace httplite
 {
 	class HttpClient
