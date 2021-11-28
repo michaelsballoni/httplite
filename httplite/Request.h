@@ -6,6 +6,7 @@ namespace httplite
 {
 	struct Request
 	{
+		std::string Host;
 		std::string Verb;
 		std::vector<std::wstring> PathParts;
 		std::unordered_map<std::wstring, std::wstring> QueryParams;

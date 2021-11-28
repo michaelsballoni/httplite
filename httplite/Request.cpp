@@ -35,6 +35,8 @@ namespace httplite
         }
         headers += " HTTP/1.0\r\n";
 
+        headers += "Host: " + Host + "\r\n";
+
         for (const auto& headerIt : Headers)
             headers += headerIt.first + ": " + headerIt.second + "\r\n";
 

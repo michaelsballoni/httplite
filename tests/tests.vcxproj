@@ -172,6 +172,7 @@
     </ClCompile>
     <ClCompile Include="TestCore.cpp" />
     <ClCompile Include="TestHeaderReader.cpp" />
+    <ClCompile Include="TestRequest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
