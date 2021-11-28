@@ -81,41 +81,43 @@ namespace httplite
 
 				size_t remainderSize = 0;
 				const uint8_t* remainderBytes = reader.GetRemainder(remainderSize);
-				if (remainderSize > 0)
-				{
-					response.Payload.emplace(Buffer());
-					response.Payload->Bytes.resize(remainderSize);
-					memcpy(response.Payload->Bytes.data(), remainderBytes, remainderSize);
-				}
 
 				bool isConnectionClose = response.IsConnectionClose();
 				int64_t contentLength = isConnectionClose ? -1 : response.ContentLength();
 
-				if ((contentLength > 0 || isConnectionClose) && !response.Payload.has_value())
-					response.Payload.emplace(Buffer());
-				auto& payloadBytes = response.Payload->Bytes;
-				if (contentLength > 0)
-					payloadBytes.reserve(size_t(contentLength));
-
-				size_t recvYet = remainderSize;
-				int64_t totalToRecv = contentLength;
-				while (isConnectionClose || recvYet < totalToRecv)
+				if (contentLength > 0 || isConnectionClose || remainderSize > 0)
 				{
-					int recvd = ::recv(m_socket, reinterpret_cast<char*>(recvBuffer), sizeof(recvBuffer), 0);
-					if (recvd == 0)
+					response.Payload.emplace();
+					std::vector<uint8_t>& payloadBytes = response.Payload->Bytes;
+
+					if (contentLength > 0)
+						payloadBytes.reserve(size_t(contentLength));
+
+					if (remainderSize > 0)
 					{
-						if (isConnectionClose)
-							break;
-						else
-							throw NetworkError("HttpClient: Server closed connection while receiving response payload");
+						response.Payload->Bytes.resize(remainderSize);
+						memcpy(response.Payload->Bytes.data(), remainderBytes, remainderSize);
 					}
-					if (recvd < 0)
-						throw NetworkError("HttpClient: Error receiving response payload");
 
-					payloadBytes.resize(payloadBytes.size() + recvd);
-					memcpy(payloadBytes.data() + payloadBytes.size() - recvd, recvBuffer, recvd);
+					size_t recvYet = remainderSize;
+					while (isConnectionClose || recvYet < contentLength)
+					{
+						int recvd = ::recv(m_socket, reinterpret_cast<char*>(recvBuffer), sizeof(recvBuffer), 0);
+						if (recvd == 0)
+						{
+							if (isConnectionClose)
+								break;
+							else
+								throw NetworkError("HttpClient: Server closed connection while receiving response payload");
+						}
+						if (recvd < 0)
+							throw NetworkError("HttpClient: Error receiving response payload");
 
-					recvYet += recvd;
+						payloadBytes.resize(payloadBytes.size() + recvd);
+						memcpy(payloadBytes.data() + payloadBytes.size() - recvd, recvBuffer, recvd);
+
+						recvYet += recvd;
+					}
 				}
 
 				if (isConnectionClose)

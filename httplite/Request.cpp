@@ -9,6 +9,7 @@ namespace httplite
 
         headers += Verb;
         headers += ' ';
+
         if (PathParts.empty())
         {
             headers += '/';
@@ -20,6 +21,7 @@ namespace httplite
                 headers += "/" + UrlEncoded(part);
             }
         }
+
         if (!QueryParams.empty())
         {
             headers += '?';
@@ -33,9 +35,11 @@ namespace httplite
                 headers += UrlEncoded(queryIt.first) + "=" + UrlEncoded(queryIt.second);
             }
         }
+
         headers += " HTTP/1.0\r\n";
 
-        headers += "Host: " + Host + "\r\n";
+        if (!Host.empty())
+            headers += "Host: " + Host + "\r\n";
 
         for (const auto& headerIt : Headers)
             headers += headerIt.first + ": " + headerIt.second + "\r\n";

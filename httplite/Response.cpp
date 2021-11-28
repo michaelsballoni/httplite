@@ -14,7 +14,7 @@ namespace httplite
 		if (spaceAfterHttp == nullptr)
 			throw NetworkError("HttpClient: Invalid response line");
 
-		std::string statusLine(spaceAfterHttp, headerEnd);
+		std::string statusLine(spaceAfterHttp + 1, headerEnd);
 		size_t statusSpace = statusLine.find(' ');
 		if (statusSpace == std::string::npos)
 			throw NetworkError("HttpClient: Invalid response status");
@@ -72,8 +72,15 @@ namespace httplite
 	{
 		for (const auto& header : Headers)
 		{
-			if (toLower(header.first) == "connection" && toLower(header.second) == "close")
+			if 
+			(
+				toLower(header.first) == "connection" 
+				&& 
+				toLower(header.second).find("close") != std::string::npos
+			)
+			{
 				return true;
+			}
 		}
 		return false;
 	}

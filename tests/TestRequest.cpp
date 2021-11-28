@@ -14,7 +14,7 @@ namespace httplite
 		TEST_METHOD(TestRequest)
 		{
 			Request request;
-			request.Host = "michaelballoni.com";
+			request.Host = "www.michaelballoni.com";
 			request.Verb = "GET";
 			request.PathParts = std::vector<std::wstring>{ L"Music", L"index.html" };
 			request.QueryParams =
@@ -34,7 +34,7 @@ namespace httplite
 			std::string computedTotalHeader = request.GetTotalHeader();
 			std::string expectedTotalHeader =
 				"GET /Music/index.html?foo=bar&blet=mon%20key HTTP/1.0\r\n"
-				"Host: michaelballoni.com\r\n"
+				"Host: www.michaelballoni.com\r\n"
 				"some: thing\r\n"
 				"totally: different\r\n"
 				"Content-Length: 38\r\n"
