@@ -12,10 +12,14 @@
 
 #include <codecvt>
 #include <cstdint>
+#include <functional>
 #include <locale> 
+#include <memory> 
+#include <mutex> 
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>

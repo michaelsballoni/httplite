@@ -4,6 +4,30 @@
 
 namespace httplite
 {
+	std::uint16_t Response::GetStatusCode() const
+	{
+		size_t statusSpace = Status.find(' ');
+		if (statusSpace == std::string::npos)
+			throw NetworkError("Invalid response status");
+
+		std::string numberPart = Status.substr(0, statusSpace);
+		std::string descriptionPart = Status.substr(statusSpace + 1);
+
+		int code = ::atoi(numberPart.c_str());
+		if (code <= 0 || code > USHRT_MAX)
+			throw NetworkError("Invalid status code");
+		return static_cast<uint16_t>(code);
+	}
+
+	std::wstring Response::GetStatusDescription() const
+	{
+		size_t statusSpace = Status.find(' ');
+		if (statusSpace == std::string::npos)
+			throw NetworkError("Invalid response status");
+		std::string description = Status.substr(statusSpace + 1);
+		return UrlDecoded(description);
+	}
+
 	void Response::ReadHeader(const char* headerStart)
 	{
 		const char* headerEnd = strstr(headerStart, "\r\n");
@@ -14,21 +38,7 @@ namespace httplite
 		if (spaceAfterHttp == nullptr)
 			throw NetworkError("HttpClient: Invalid response line");
 
-		std::string statusLine(spaceAfterHttp + 1, headerEnd);
-		size_t statusSpace = statusLine.find(' ');
-		if (statusSpace == std::string::npos)
-			throw NetworkError("HttpClient: Invalid response status");
-
-		std::string numberPart = statusLine.substr(0, statusSpace);
-		std::string descriptionPart = statusLine.substr(statusSpace + 1);
-
-		int code = ::atoi(numberPart.c_str());
-		if (code <= 0)
-			throw NetworkError("HttpClient: Invalid response code");
-		Code = static_cast<uint16_t>(code);
-
-		Status = numberPart;
-		Description = descriptionPart;
+		Status = std::string(spaceAfterHttp + 1, headerEnd);
 
 		headerStart = headerEnd + 2;
 

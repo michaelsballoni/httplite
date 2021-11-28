@@ -14,10 +14,9 @@ namespace httplite
 		TEST_METHOD(TestRequest)
 		{
 			Request request;
-			request.Host = "www.michaelballoni.com";
 			request.Verb = "GET";
-			request.PathParts = std::vector<std::wstring>{ L"Music", L"index.html" };
-			request.QueryParams =
+			request.Path = std::vector<std::wstring>{ L"Music", L"index.html" };
+			request.Query =
 				std::unordered_map<std::wstring, std::wstring>
 				{ 
 					{ L"foo", L"bar" }, 
@@ -34,7 +33,6 @@ namespace httplite
 			std::string computedTotalHeader = request.GetTotalHeader();
 			std::string expectedTotalHeader =
 				"GET /Music/index.html?foo=bar&blet=mon%20key HTTP/1.0\r\n"
-				"Host: www.michaelballoni.com\r\n"
 				"some: thing\r\n"
 				"totally: different\r\n"
 				"Content-Length: 38\r\n"
@@ -42,5 +40,7 @@ namespace httplite
 				"\r\n";
 			Assert::AreEqual(expectedTotalHeader, computedTotalHeader);
 		}
+
+        // FORNOW - Add test for Request::ReadHeader
 	};
 }

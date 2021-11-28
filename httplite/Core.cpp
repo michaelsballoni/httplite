@@ -1,7 +1,61 @@
 #include "pch.h"
 #include "Core.h"
 
-std::string httplite::UrlEncoded(const std::wstring& part) 
+std::vector<std::string> httplite::Split(const std::string& str, char separator)
+{
+    std::vector<std::string> retVal;
+    std::string accumulator;
+    for (auto c : str)
+    {
+        if (c == separator)
+        {
+            if (!accumulator.empty())
+            {
+                retVal.push_back(accumulator);
+                accumulator.clear();
+            }
+        }
+        else
+            accumulator += c;
+    }
+    
+    if (!accumulator.empty())
+    {
+        retVal.push_back(accumulator);
+        accumulator.clear();
+    }
+
+    return retVal;
+}
+
+std::vector<std::wstring> httplite::Split(const std::wstring& str, wchar_t separator)
+{
+    std::vector<std::wstring> retVal;
+    std::wstring accumulator;
+    for (auto c : str)
+    {
+        if (c == separator)
+        {
+            if (!accumulator.empty())
+            {
+                retVal.push_back(accumulator);
+                accumulator.clear();
+            }
+        }
+        else
+            accumulator += c;
+    }
+
+    if (!accumulator.empty())
+    {
+        retVal.push_back(accumulator);
+        accumulator.clear();
+    }
+
+    return retVal;
+}
+
+std::string httplite::UrlEncoded(const std::wstring& part)
 {
     std::string retVal;
     char hexBuffer[10];

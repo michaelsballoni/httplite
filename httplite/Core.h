@@ -63,6 +63,9 @@ namespace httplite
 		return retVal;
 	}
 
+	std::vector<std::string> Split(const std::string& str, char separator);
+	std::vector<std::wstring> Split(const std::wstring& str, wchar_t separator);
+
 	std::string UrlEncoded(const std::wstring& part);
 	std::wstring UrlDecoded(const std::string& part);
 }
