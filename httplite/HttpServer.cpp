@@ -19,8 +19,6 @@ namespace httplite
 
 	void HttpServer::StartServing()
 	{
-		m_keepRunning = true;
-
 		m_listenSocket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (m_listenSocket == INVALID_SOCKET)
 			throw NetworkError("HttpServer: Creating listener failed");
@@ -83,47 +81,39 @@ namespace httplite
 	{
 		while (true)
 		{
-			uint8_t recvBuffer[8 * 1024];
-			const size_t maxHeaderSize = 1024 * 1024;
-			HeaderReader reader;
-			while (true)
-			{
-				int recvd = ::recv(clientSocket, reinterpret_cast<char*>(recvBuffer), sizeof(recvBuffer), 0);
-				if (recvd <= 0)
-					return;
-				if (reader.OnMoreData(recvBuffer, recvd))
-					break;
-				if (reader.GetSize() > maxHeaderSize)
-					return;
-			}
-
 			Request request;
-			std::string errMsg = request.ReadHeader(reader.GetHeaders());
-			// FORNOW - Return special special Response for error message
-
-			// FORNOW - Process any posted payload
+			std::string messageReadError = request.Recv(clientSocket);
+			if (messageReadError == "closed" || messageReadError == "Network Error")
+				return;
 
 			Response response;
-			std::string errorMessage;
-			try
+			if (!messageReadError.empty())
 			{
-				response = m_function(request);
+				response = Response::CreateErrorResponse(400, messageReadError);
 			}
-			catch (const std::exception& exp) 
+			else
 			{
-				errorMessage = exp.what();
-			}
-			catch (...)
-			{
-				errorMessage = "unknown";
-			}
-			if (!errorMessage.empty())
-			{
-				response = Response();
-				// FORNOW - Return special Response for this
+				std::string functionErrorMessage;
+				try
+				{
+					response = m_function(request);
+				}
+				catch (const std::exception& exp)
+				{
+					functionErrorMessage = exp.what();
+				}
+				catch (...)
+				{
+					functionErrorMessage = "unknown";
+				}
+				if (!functionErrorMessage.empty())
+				{
+					response = Response::CreateErrorResponse(500, functionErrorMessage);
+				}
 			}
 
-			// FORNOW - send response
+			std::string sendResponseError = response.Send(clientSocket);
+			(void)sendResponseError;
 		}
 	}
 }

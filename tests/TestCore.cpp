@@ -59,45 +59,45 @@ namespace httplite
 			{
 				std::wstring from = L"";
 				std::string to = "";
-				std::string enc = httplite::UrlEncoded(from);
+				std::string enc = httplite::UrlEncode(from);
 				Assert::AreEqual(to, enc);
-				std::wstring dec = httplite::UrlDecoded(enc);
+				std::wstring dec = httplite::UrlDecode(enc);
 				Assert::AreEqual(from, dec);
 			}
 
 			{
 				std::wstring from = L"f";
 				std::string to = "f";
-				std::string enc = httplite::UrlEncoded(from);
+				std::string enc = httplite::UrlEncode(from);
 				Assert::AreEqual(to, enc);
-				std::wstring dec = httplite::UrlDecoded(enc);
+				std::wstring dec = httplite::UrlDecode(enc);
 				Assert::AreEqual(from, dec);
 			}
 
 			{
 				std::wstring from = L" ";
 				std::string to = "%20";
-				std::string enc = httplite::UrlEncoded(from);
+				std::string enc = httplite::UrlEncode(from);
 				Assert::AreEqual(to, enc);
-				std::wstring dec = httplite::UrlDecoded(enc);
+				std::wstring dec = httplite::UrlDecode(enc);
 				Assert::AreEqual(from, dec);
 			}
 
 			{
 				std::wstring from = L"foo";
 				std::string to = "foo";
-				std::string enc = httplite::UrlEncoded(from);
+				std::string enc = httplite::UrlEncode(from);
 				Assert::AreEqual(to, enc);
-				std::wstring dec = httplite::UrlDecoded(enc);
+				std::wstring dec = httplite::UrlDecode(enc);
 				Assert::AreEqual(from, dec);
 			}
 
 			{
 				std::wstring from = L"foo bar";
 				std::string to = "foo%20bar";
-				std::string enc = httplite::UrlEncoded(from);
+				std::string enc = httplite::UrlEncode(from);
 				Assert::AreEqual(to, enc);
-				std::wstring dec = httplite::UrlDecoded(enc);
+				std::wstring dec = httplite::UrlDecode(enc);
 				Assert::AreEqual(from, dec);
 			}
 		}

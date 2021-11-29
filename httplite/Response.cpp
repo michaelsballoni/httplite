@@ -10,12 +10,10 @@ namespace httplite
 		if (statusSpace == std::string::npos)
 			throw NetworkError("Invalid response status");
 
-		std::string numberPart = Status.substr(0, statusSpace);
-		std::string descriptionPart = Status.substr(statusSpace + 1);
-
-		int code = ::atoi(numberPart.c_str());
+		int code = ::atoi(Status.substr(0, statusSpace).c_str());
 		if (code <= 0 || code > USHRT_MAX)
 			throw NetworkError("Invalid status code");
+
 		return static_cast<uint16_t>(code);
 	}
 
@@ -24,19 +22,26 @@ namespace httplite
 		size_t statusSpace = Status.find(' ');
 		if (statusSpace == std::string::npos)
 			throw NetworkError("Invalid response status");
-		std::string description = Status.substr(statusSpace + 1);
-		return UrlDecoded(description);
+		return UrlDecode(Status.substr(statusSpace + 1));
 	}
 
-	void Response::ReadHeader(const char* headerStart)
+	std::string Response::GetTotalHeader() const
+	{
+		return
+			"HTTP / 1.0 " + Status + "\r\n" +
+			GetCommonHeader() +
+			"\r\n";
+	}
+
+	std::string Response::ReadHeader(const char* headerStart)
 	{
 		const char* headerEnd = strstr(headerStart, "\r\n");
 		if (headerEnd == nullptr)
-			throw NetworkError("HttpClient: Invalid response header");
+			return "Invalid response header";
 
 		const char* spaceAfterHttp = strstr(headerStart, " ");
 		if (spaceAfterHttp == nullptr)
-			throw NetworkError("HttpClient: Invalid response line");
+			return "HttpClient: Invalid response line";
 
 		Status = std::string(spaceAfterHttp + 1, headerEnd);
 
@@ -54,7 +59,7 @@ namespace httplite
 
 			size_t colonIndex = line.find(':');
 			if (colonIndex == std::string::npos)
-				throw NetworkError("HttpClient: Invalid response header");
+				return "Invalid response header";
 
 			std::string headerName = line.substr(0, colonIndex);
 
@@ -65,48 +70,26 @@ namespace httplite
 				while (*headerValueStart && ::isspace(*headerValueStart))
 					++headerValueStart;
 				if (*headerValueStart == '\0')
-					throw NetworkError("HttpClient: Invalid response header value");
+					return "Invalid response header value";
 				headerValue = headerValueStart;
 			}
 
 			if (Headers.find(headerName) != Headers.end())
-				throw NetworkError("HttpClient: Invalid duplicate response header");
+				return "Invalid duplicate response header";
 
 			Headers.insert({ headerName, headerValue });
 
 			headerStart = headerEnd + 2;
 		}
+
+		return std::string();
 	}
 
-	bool Response::IsConnectionClose() const
+	Response Response::CreateErrorResponse(uint16_t errorCode, const std::string& errorMsg)
 	{
-		for (const auto& header : Headers)
-		{
-			if 
-			(
-				toLower(header.first) == "connection" 
-				&& 
-				toLower(header.second).find("close") != std::string::npos
-			)
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-
-	int64_t Response::ContentLength() const
-	{
-		for (const auto& header : Headers)
-		{
-			if (toLower(header.first) == "content-length")
-			{
-				int64_t contentLength = _atoi64(header.second.c_str());
-				if (contentLength < 0)
-					throw NetworkError("HttpClient: Invalid Content-Length header value");
-				return contentLength;
-			}
-		}
-		return -1;
+		Response response;
+		response.Status = std::to_string(errorCode) + " " + errorMsg;
+		response.Headers.insert({ "Connection", "close" });
+		return response;
 	}
 }

@@ -12,7 +12,7 @@ namespace httplite
 		~HttpServer();
 
 		void StartServing();
-		void StopServing();
+		void StopServing(); // NOTE: can't restart after stopping
 
 	private:
 		void AcceptConnections();

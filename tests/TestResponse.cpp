@@ -23,12 +23,12 @@ namespace httplite
 			Response response;
 			response.ReadHeader(header);
 
-			Assert::AreEqual(uint16_t(500), response.GetStatusCode());
+			Assert::AreEqual(500, int(response.GetStatusCode()));
 			Assert::AreEqual(std::string("500.100 Interal ASP Error"), response.Status);
 			Assert::AreEqual(std::wstring(L"Interal ASP Error"), response.GetStatusDescription());
 			Assert::AreEqual(std::string("text/html"), response.Headers["Content-Type"]);
 			Assert::IsTrue(response.IsConnectionClose());
-			Assert::AreEqual(1234, int(response.ContentLength()));
+			Assert::AreEqual(1234, int(response.GetContentLength()));
 		}
 	};
 }

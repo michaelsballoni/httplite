@@ -1,21 +1,20 @@
 #pragma once
 
-#include "Buffer.h"
+#include "Message.h"
 
 namespace httplite
 {
-	struct Response
+	class Response : public Message
 	{
+	public:
 		std::string Status; // Code + "decimal" part + Description, "500.100 Internal ASP Error"
-		std::unordered_map<std::string, std::string> Headers;
-		std::optional<Buffer> Payload;
 
 		std::uint16_t GetStatusCode() const;
 		std::wstring GetStatusDescription() const;
 
-		bool IsConnectionClose() const;
-		int64_t ContentLength() const;
+		static Response CreateErrorResponse(uint16_t errorCode, const std::string& errorMsg);
 
-		void ReadHeader(const char* headerStart);
+		virtual std::string GetTotalHeader() const;
+		virtual std::string ReadHeader(const char* headerStart);
 	};
 }

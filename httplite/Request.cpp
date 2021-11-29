@@ -3,63 +3,50 @@
 
 namespace httplite
 {
-    std::string Request::GetTotalHeader() const
+	std::string Request::GetTotalHeader() const
     {
-        std::string headers;
+        std::string header;
 
-        headers += Verb;
-        headers += ' ';
+        header += Verb;
+        header += ' ';
 
-        if (Path.empty())
+        if (!Path.empty())
         {
-            headers += '/';
+			for (const auto& part : Path)
+				header += "/" + UrlEncode(part);
         }
         else
+			header += '/';
+		
+        bool anyQueryYet = false;
+        for (const auto& queryIt : Query)
         {
-            for (const auto& part : Path)
-            {
-                headers += "/" + UrlEncoded(part);
-            }
+			if (anyQueryYet)
+				header += '&';
+			else
+				header += '?';
+			anyQueryYet = true;
+
+            header += UrlEncode(queryIt.first) + "=" + UrlEncode(queryIt.second);
         }
 
-        if (!Query.empty())
-        {
-            headers += '?';
-            bool anyYet = false;
-            for (const auto& queryIt : Query)
-            {
-                if (anyYet)
-                    headers += '&';
-                anyYet = true;
+        header += " HTTP/1.0\r\n";
 
-                headers += UrlEncoded(queryIt.first) + "=" + UrlEncoded(queryIt.second);
-            }
-        }
-
-        headers += " HTTP/1.0\r\n";
-
-        for (const auto& headerIt : Headers)
-            headers += headerIt.first + ": " + headerIt.second + "\r\n";
-
-        if (Payload.has_value())
-            headers += "Content-Length: " + num2str(Payload->Bytes.size()) + "\r\n";
-
-        headers += "Connection: keep-alive\r\n";
-
-        headers += "\r\n";
-
-        return headers;
+		header += GetCommonHeader();
+        header += "\r\n";
+        
+		return header;
     }
 
 	std::string Request::ReadHeader(const char* headerStart)
 	{
 		const char* headerEnd = strstr(headerStart, "\r\n");
 		if (headerEnd == nullptr)
-			return "Invalid request header";
+			return "Invalid Request Header";
 
 		std::vector<std::string> responseLine = Split(std::string(headerStart, headerEnd), ' ');
 		if (responseLine.size() < 3)
-			return ("Invalid request line");
+			return "Invalid Request Line";
 
 		Verb = responseLine[0];
 
@@ -76,26 +63,22 @@ namespace httplite
 				path = pathAndQuery;
 		}
 
-		Path = Split(UrlDecoded(path), '/');
-		if (Path.empty())
-			return ("Invalid request line");
+		for (const std::string& part : Split(path, '/'))
+			Path.push_back(UrlDecode(part));
 
-		if (!query.empty())
+		for (const std::string& part : Split(query, '&'))
 		{
-			for (const std::string& part : Split(query, '&'))
-			{
-				size_t equals = part.find('=');
-				if (equals == std::string::npos)
-					return ("Invalid request line");
+			size_t equals = part.find('=');
+			if (equals == std::string::npos)
+				return "Invalid Query String";
 
-				std::wstring name = UrlDecoded(part.substr(0, equals));
-				std::wstring value = UrlDecoded(part.substr(equals + 1));
+			std::wstring name = UrlDecode(part.substr(0, equals));
+			std::wstring value = UrlDecode(part.substr(equals + 1));
 				
-				if (Query.find(name) == Query.end())
-					Query.insert({ name, value });
-				else
-					Query[name] += L"," + value;
-			}
+			if (Query.find(name) == Query.end())
+				Query.insert({ name, value });
+			else
+				Query[name] += L"," + value;
 		}
 
 		headerStart = headerEnd + 2;
@@ -112,7 +95,7 @@ namespace httplite
 
 			size_t colonIndex = line.find(':');
 			if (colonIndex == std::string::npos)
-				return "Invalid request header";
+				return "Invalid Request Header";
 
 			std::string headerName = line.substr(0, colonIndex);
 
@@ -123,12 +106,12 @@ namespace httplite
 				while (*headerValueStart && ::isspace(*headerValueStart))
 					++headerValueStart;
 				if (*headerValueStart == '\0')
-					return "Invalid request header value";
+					return "Invalid Request Header Value";
 				headerValue = headerValueStart;
 			}
 
 			if (Headers.find(headerName) != Headers.end())
-				return "Invalid duplicate header";
+				return "Invalid Duplicate Header";
 
 			Headers.insert({ headerName, headerValue });
 

@@ -55,7 +55,7 @@ std::vector<std::wstring> httplite::Split(const std::wstring& str, wchar_t separ
     return retVal;
 }
 
-std::string httplite::UrlEncoded(const std::wstring& part)
+std::string httplite::UrlEncode(const std::wstring& part)
 {
     std::string retVal;
     char hexBuffer[10];
@@ -79,7 +79,7 @@ std::string httplite::UrlEncoded(const std::wstring& part)
     return retVal;
 }
 
-std::wstring httplite::UrlDecoded(const std::string& part)
+std::wstring httplite::UrlDecode(const std::string& part)
 {
     std::wstring retVal;
     for (size_t i = 0; i < part.length(); ++i) 
