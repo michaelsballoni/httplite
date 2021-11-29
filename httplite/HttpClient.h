@@ -13,11 +13,10 @@ namespace httplite
 		HttpClient(const std::string& serverIpAddress, uint16_t port);
 		~HttpClient();
 
-		Response ProcessRequest(const Request& request);
-
-	private:
 		void EnsureConnected();
 		void Disconnect();
+
+		Response ProcessRequest(const Request& request);
 
 	private:
 		SOCKET m_socket;

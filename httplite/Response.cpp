@@ -28,7 +28,7 @@ namespace httplite
 	std::string Response::GetTotalHeader() const
 	{
 		return
-			"HTTP / 1.0 " + Status + "\r\n" +
+			"HTTP/1.0 " + Status + "\r\n" +
 			GetCommonHeader() +
 			"\r\n";
 	}
@@ -83,6 +83,13 @@ namespace httplite
 		}
 
 		return std::string();
+	}
+
+	bool Response::ShouldRecvPayload(size_t remainderSize) const
+	{
+		bool isConnectionClose = IsConnectionClose();
+		int64_t contentLength = isConnectionClose ? -1 : GetContentLength();
+		return contentLength > 0 || isConnectionClose || remainderSize > 0;
 	}
 
 	Response Response::CreateErrorResponse(uint16_t errorCode, const std::string& errorMsg)

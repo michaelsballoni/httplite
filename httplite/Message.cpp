@@ -9,11 +9,11 @@ namespace httplite
 		for (const auto& header : Headers)
 		{
 			if
-				(
-					toLower(header.first) == "connection"
-					&&
-					toLower(header.second).find("keep-alive") != std::string::npos
-					)
+			(
+				toLower(header.first) == "connection"
+				&&
+				toLower(header.second).find("keep-alive") != std::string::npos
+			)
 			{
 				return false;
 			}
@@ -75,39 +75,42 @@ namespace httplite
 		size_t remainderSize = 0;
 		const uint8_t* remainderBytes = reader.GetRemainder(remainderSize);
 
-		bool isConnectionClose = IsConnectionClose();
-		int64_t contentLength = isConnectionClose ? -1 : GetContentLength();
-
-		if (contentLength > 0 || isConnectionClose || remainderSize > 0)
+		if (ShouldRecvPayload(remainderSize))
 		{
-			Payload.emplace();
-			std::vector<uint8_t>& requestPayloadBytes = Payload->Bytes;
+			bool isConnectionClose = IsConnectionClose();
+			int64_t contentLength = isConnectionClose ? -1 : GetContentLength();
 
-			if (contentLength > 0)
-				requestPayloadBytes.reserve(size_t(contentLength));
-
-			if (remainderSize > 0)
+			if (contentLength > 0 || isConnectionClose || remainderSize > 0)
 			{
-				Payload->Bytes.resize(remainderSize);
-				memcpy(Payload->Bytes.data(), remainderBytes, remainderSize);
-			}
+				Payload.emplace();
+				std::vector<uint8_t>& requestPayloadBytes = Payload->Bytes;
 
-			size_t recvYet = remainderSize;
-			while (isConnectionClose || recvYet < contentLength)
-			{
-				int recvd = ::recv(theSocket, reinterpret_cast<char*>(recvBuffer), sizeof(recvBuffer), 0);
-				if (recvd <= 0)
+				if (contentLength > 0)
+					requestPayloadBytes.reserve(size_t(contentLength));
+
+				if (remainderSize > 0)
 				{
-					if (isConnectionClose)
-						return "closed";
-					else
-						return "Network Error";
+					Payload->Bytes.resize(remainderSize);
+					memcpy(Payload->Bytes.data(), remainderBytes, remainderSize);
 				}
 
-				requestPayloadBytes.resize(requestPayloadBytes.size() + recvd);
-				memcpy(requestPayloadBytes.data() + requestPayloadBytes.size() - recvd, recvBuffer, recvd);
+				size_t recvYet = remainderSize;
+				while (isConnectionClose || recvYet < contentLength)
+				{
+					int recvd = ::recv(theSocket, reinterpret_cast<char*>(recvBuffer), sizeof(recvBuffer), 0);
+					if (recvd <= 0)
+					{
+						if (isConnectionClose)
+							return "closed";
+						else
+							return "Network Error";
+					}
 
-				recvYet += recvd;
+					requestPayloadBytes.resize(requestPayloadBytes.size() + recvd);
+					memcpy(requestPayloadBytes.data() + requestPayloadBytes.size() - recvd, recvBuffer, recvd);
+
+					recvYet += recvd;
+				}
 			}
 		}
 

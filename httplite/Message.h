@@ -20,6 +20,7 @@ namespace httplite
 
 		virtual std::string GetTotalHeader() const = 0;
 		virtual std::string ReadHeader(const char* headerStart) = 0;
+		virtual bool ShouldRecvPayload(size_t remainderSize) const = 0;
 
 	protected:
 		std::string GetCommonHeader() const;

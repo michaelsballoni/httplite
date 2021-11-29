@@ -14,11 +14,16 @@ namespace httplite
 			memcpy(Bytes.data(), utf8.c_str(), utf8.length());
 		}
 
-		std::wstring ToString()
+		std::wstring ToString() const
 		{
-			Bytes.push_back(0);
-			std::string utf8 = reinterpret_cast<const char*>(Bytes.data());
-			Bytes.pop_back();
+			if (Bytes.empty())
+				return std::wstring();
+
+			std::string utf8
+			(
+				reinterpret_cast<const char*>(&Bytes.front()), 
+				reinterpret_cast<const char*>(&Bytes.back())
+			);
 			return toWideStr(utf8);
 		}
 

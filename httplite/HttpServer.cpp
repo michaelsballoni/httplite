@@ -43,14 +43,16 @@ namespace httplite
 		m_keepRunning = false;
 
 		::closesocket(m_listenSocket);
-		m_listenThread->join();
+		if (m_listenThread != nullptr && m_listenThread->joinable())
+			m_listenThread->join();
 
 		{
 			std::lock_guard<std::mutex> lock(m_clientsMutex);
 			for (const auto& clientIt : m_clients)
 			{
 				::closesocket(clientIt.first);
-				clientIt.second->join();
+				if (clientIt.second->joinable())
+					clientIt.second->join();
 			}
 			m_clients.clear();
 		}

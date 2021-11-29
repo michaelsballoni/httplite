@@ -17,34 +17,6 @@ namespace httplite
 		Disconnect();
 	}
 
-	Response HttpClient::ProcessRequest(const Request& request)
-	{
-		EnsureConnected();
-
-#ifndef _DEBUG
-		try
-#endif
-		{
-			std::string sendMessageError = request.Send(m_socket);
-			if (!sendMessageError.empty())
-				throw NetworkError(sendMessageError);
-
-			Response response;
-			std::string recvMessageError = response.Recv(m_socket);
-			if (!recvMessageError.empty())
-				throw NetworkError(recvMessageError);
-
-			return response;
-		}
-#ifndef _DEBUG
-		catch (...)
-		{
-			Disconnect();
-			throw;
-		}
-#endif
-	}
-
 	void HttpClient::EnsureConnected()
 	{
 		if (m_isConnected)
@@ -76,5 +48,33 @@ namespace httplite
 		}
 
 		m_isConnected = false;
+	}
+
+	Response HttpClient::ProcessRequest(const Request& request)
+	{
+		EnsureConnected();
+
+#ifndef _DEBUG
+		try
+#endif
+		{
+			std::string sendMessageError = request.Send(m_socket);
+			if (!sendMessageError.empty())
+				throw NetworkError(sendMessageError);
+
+			Response response;
+			std::string recvMessageError = response.Recv(m_socket);
+			if (!recvMessageError.empty())
+				throw NetworkError(recvMessageError);
+
+			return response;
+		}
+#ifndef _DEBUG
+		catch (...)
+		{
+			Disconnect();
+			throw;
+		}
+#endif
 	}
 }
