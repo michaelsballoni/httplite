@@ -4,11 +4,12 @@
 
 #include <iostream>
 
-static httplite::Response HandleRequest(const httplite::Request& request)
+static httplite::Response HandleRequest(const httplite::Request& request, httplite::Pacifier pacifier)
 {
-	httplite::Response response;
+	httplite::Response response("HandleRequest", pacifier);
 	if (request.Verb == "GET")
 	{
+		printf("GET: reversrever\n");
 		response.Payload.emplace(L"reversrever");
 	}
 	else if (request.Verb == "POST")
@@ -16,7 +17,9 @@ static httplite::Response HandleRequest(const httplite::Request& request)
 		if (!request.Payload.has_value())
 			throw httplite::NetworkError("POST request has no payload to reverse");
 		std::wstring str = request.Payload->ToString();
+		printf("POST: str to reverse: %S\n", str.c_str());
 		std::reverse(str.begin(), str.end());
+		printf("POST: reversed str: %S\n", str.c_str());
 		response.Payload.emplace(str);
 	}
 	else
@@ -50,7 +53,7 @@ int main(int argc, char* argv[])
 			std::string serverIp = argv[2];
 			uint16_t serverPort = uint16_t(atoi(argv[3]));
 
-			httplite::HttpClient client(serverIp, serverPort);
+			httplite::HttpClient client(serverIp, serverPort, &httplite::pacify);
 			while (true)
 			{
 				printf("\n> ");
@@ -73,12 +76,20 @@ int main(int argc, char* argv[])
 					continue;
 				}
 
-				httplite::Request request;
+				httplite::Request request("HttpClient", &httplite::pacify);
 				request.Verb = strs[0];
+				if (request.Verb != "GET" && request.Verb != "POST")
+				{
+					printf("Verb must be GET or POST\n");
+					continue;
+				}
 				request.Path = httplite::Split(httplite::toWideStr(strs[1]), '/');
-				if (request.Verb != "GET")
+				if (request.Verb == "POST")
+				{
+					printf("String to reverse: %s\n", strs[2].c_str());
 					request.Payload.emplace(httplite::toWideStr(strs[2]));
-				
+				}
+
 				printf("Issuing query:\n%s", request.GetTotalHeader().c_str());
 				httplite::Response response = client.ProcessRequest(request);
 
@@ -98,7 +109,7 @@ int main(int argc, char* argv[])
 			uint16_t port = uint16_t(atoi(argv[2]));
 			
 			printf("Starting serving on port %d...\n", (int)port);
-			httplite::HttpServer server(port, &HandleRequest);
+			httplite::HttpServer server(port, &HandleRequest, &httplite::pacify);
 			server.StartServing();
 
 			printf("Hit [Enter] to stop serving and close the program: ");

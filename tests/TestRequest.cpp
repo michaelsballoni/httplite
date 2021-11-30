@@ -13,7 +13,7 @@ namespace httplite
 	public:
 		TEST_METHOD(TestRequestGetHeader)
 		{
-			Request request;
+			Request request("TestRequestGetHeader", &pacify);
 			request.Verb = "GET";
 			request.Path = std::vector<std::wstring>{ L"Music", L"index.html" };
 			request.Query =
@@ -51,7 +51,7 @@ namespace httplite
 				"Connection: keep-alive\r\n"
 				"\r\n";
 
-			Request request;
+			Request request("TestRequestReadHeader", &pacify);
 			std::string errorMessage = request.ReadHeader(totalHeaderToRead.c_str());
 			Assert::IsTrue(errorMessage.empty());
 			

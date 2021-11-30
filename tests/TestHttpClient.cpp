@@ -13,7 +13,7 @@ namespace httplite
 	public:
 		TEST_METHOD(TestHttpClient)
 		{
-			Request request;
+			Request request("TestHttpClient", &pacify);
 			request.Verb = "GET";
 			request.Path = std::vector<std::wstring>{ L"Music", L"index.html" };
 			request.Headers["Host"] = "www.michaelballoni.com";
@@ -23,7 +23,7 @@ namespace httplite
 				Assert::Fail();
 			
 			std::string hostIp = ::inet_ntoa(*((struct in_addr*)hostEntry->h_addr_list[0]));
-			HttpClient client(hostIp, 80);
+			HttpClient client(hostIp, 80, &pacify);
 			
 			Response response = client.ProcessRequest(request);
 			Assert::AreEqual(200, int(response.GetStatusCode()));

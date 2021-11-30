@@ -4,10 +4,11 @@
 
 namespace httplite
 {
-	HttpClient::HttpClient(const std::string& serverIpAddress, uint16_t port)
+	HttpClient::HttpClient(const std::string& serverIpAddress, uint16_t port, Pacifier pacifier)
 		: m_socket(INVALID_SOCKET)
 		, m_serverIpAddress(serverIpAddress)
 		, m_port(port)
+		, m_pacifier(pacifier)
 		, m_isConnected(false)
 	{
 	}
@@ -22,10 +23,12 @@ namespace httplite
 		if (m_isConnected)
 			return;
 
+		m_pacifier("HttpClient", "EnsureConnected", "socket");
 		m_socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (m_socket == INVALID_SOCKET)
 			throw NetworkError("HttpClient: Creating client failed");
 
+		m_pacifier("HttpClient", "EnsureConnected", "connect");
 		sockaddr_in serverAddr;
 		serverAddr.sin_family = AF_INET;
 		serverAddr.sin_addr.s_addr = inet_addr(m_serverIpAddress.c_str());
@@ -34,6 +37,7 @@ namespace httplite
 			throw NetworkError("HttpClient: Connecting client failed");
 
 		m_isConnected = true;
+		m_pacifier("HttpClient", "EnsureConnected", "All done.");
 	}
 
 	void HttpClient::Disconnect()
@@ -41,6 +45,7 @@ namespace httplite
 		if (!m_isConnected)
 			return;
 
+		m_pacifier("HttpClient", "Disconnect", "closesocket");
 		if (m_socket != INVALID_SOCKET)
 		{
 			::closesocket(m_socket);
@@ -48,6 +53,7 @@ namespace httplite
 		}
 
 		m_isConnected = false;
+		m_pacifier("HttpClient", "Disconnect", "All done.");
 	}
 
 	Response HttpClient::ProcessRequest(const Request& request)
@@ -62,7 +68,7 @@ namespace httplite
 			if (!sendMessageError.empty())
 				throw NetworkError(sendMessageError);
 
-			Response response;
+			Response response("HttpClient", m_pacifier);
 			std::string recvMessageError = response.Recv(m_socket);
 			if (!recvMessageError.empty())
 				throw NetworkError(recvMessageError);

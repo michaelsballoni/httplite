@@ -85,16 +85,21 @@ namespace httplite
 		return std::string();
 	}
 
-	bool Response::ShouldRecvPayload(size_t remainderSize) const
+	Response Response::CreateErrorResponse
+	(
+		const char* module, 
+		uint16_t errorCode, 
+		const std::string& errorMsg, 
+		Pacifier pacifier
+	)
 	{
-		bool isConnectionClose = IsConnectionClose();
-		int64_t contentLength = isConnectionClose ? -1 : GetContentLength();
-		return contentLength > 0 || isConnectionClose || remainderSize > 0;
-	}
-
-	Response Response::CreateErrorResponse(uint16_t errorCode, const std::string& errorMsg)
-	{
-		Response response;
+		pacifier
+		(
+			module, 
+			"CreateErrorResponse", 
+			("Error: " + std::to_string(errorCode) + " " + errorMsg).c_str()
+		);
+		Response response(module, pacifier);
 		response.Status = std::to_string(errorCode) + " " + errorMsg;
 		response.Headers.insert({ "Connection", "close" });
 		return response;

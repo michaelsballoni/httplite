@@ -1,9 +1,17 @@
 #include "pch.h"
 #include "Message.h"
 #include "HeaderReader.h"
+#include "Request.h"
 
 namespace httplite
 {
+	Message::Message(const char* module, const char* type, Pacifier pacifier)
+		: m_module(module)
+		, m_type(type)
+		, m_pacifier(pacifier)
+	{
+	}
+
 	bool Message::IsConnectionClose() const
 	{
 		for (const auto& header : Headers)
@@ -41,7 +49,7 @@ namespace httplite
 		for (const auto& headerIt : Headers)
 			header += headerIt.first + ": " + headerIt.second + "\r\n";
 
-		if (Payload.has_value())
+		if (Payload.has_value() && Headers.find("Content-Length") == Headers.end())
 			header += "Content-Length: " + num2str(Payload->Bytes.size()) + "\r\n";
 
 		if (Headers.find("Connection") == Headers.end())
@@ -50,8 +58,17 @@ namespace httplite
 		return header;
 	}
 
+	const char* Message::ReturnErrorMsg(const char* area, const char* msg) const
+	{
+		m_pacifier(m_module, m_type, (std::string(area) + " errors: " + std::string(msg)).c_str());
+		return msg;
+	}
+
 	std::string Message::Recv(SOCKET theSocket)
 	{
+		m_pacifier(m_module, m_type, "Recv");
+
+		m_pacifier(m_module, m_type, "Recv: recv header");
 		uint8_t recvBuffer[8 * 1024];
 		const size_t maxHeaderSize = 1024 * 1024;
 		HeaderReader reader;
@@ -59,67 +76,94 @@ namespace httplite
 		{
 			int recvd = ::recv(theSocket, reinterpret_cast<char*>(recvBuffer), sizeof(recvBuffer), 0);
 			if (recvd == 0)
-				return "closed";
+				return ReturnErrorMsg("Recv: recv header", "closed");
 			if (recvd < 0)
-				return "Network Error";
+				return ReturnErrorMsg("Recv: recv header", "Network Error");
 			if (reader.OnMoreData(recvBuffer, recvd))
 				break;
 			if (reader.GetSize() > maxHeaderSize)
-				return "Header Overflow";
+				return ReturnErrorMsg("Recv: recv header", "Header Overflow");
 		}
 
-		std::string headerErrorMessage = ReadHeader(reader.GetHeaders());
+		m_pacifier(m_module, m_type, "Recv: ReadHeader");
+		const char* totalHeader = reader.GetHeaders();
+		std::string headerErrorMessage = ReadHeader(totalHeader);
 		if (!headerErrorMessage.empty())
 			return headerErrorMessage;
 
+		m_pacifier(m_module, m_type, "Recv: GetRemainder");
 		size_t remainderSize = 0;
 		const uint8_t* remainderBytes = reader.GetRemainder(remainderSize);
 
-		if (ShouldRecvPayload(remainderSize))
+		bool isConnectionClose = IsConnectionClose();
+		int64_t contentLength = GetContentLength();
+
+		bool isGetRequest =
+			typeid(*this) == typeid(Request)
+			&&
+			static_cast<Request*>(this)->Verb == "GET";
+
+		bool willReadPayload =
+			!isGetRequest
+			&&
+			(
+				remainderSize > 0
+				||
+				contentLength > 0
+				||
+				isConnectionClose
+			);
+		if (!willReadPayload)
 		{
-			bool isConnectionClose = IsConnectionClose();
-			int64_t contentLength = isConnectionClose ? -1 : GetContentLength();
+			m_pacifier(m_module, m_type, "Recv: will NOT ReadPayload, All done.");
+			return std::string();
+		}
+		else
+			m_pacifier(m_module, m_type, "Recv: will ReadPayload");
 
-			if (contentLength > 0 || isConnectionClose || remainderSize > 0)
-			{
-				Payload.emplace();
-				std::vector<uint8_t>& requestPayloadBytes = Payload->Bytes;
+		Payload.emplace();
+		std::vector<uint8_t>& requestPayloadBytes = Payload->Bytes;
 
-				if (contentLength > 0)
-					requestPayloadBytes.reserve(size_t(contentLength));
+		if (contentLength > 0)
+			requestPayloadBytes.reserve(size_t(contentLength));
 
-				if (remainderSize > 0)
-				{
-					Payload->Bytes.resize(remainderSize);
-					memcpy(Payload->Bytes.data(), remainderBytes, remainderSize);
-				}
-
-				size_t recvYet = remainderSize;
-				while (isConnectionClose || recvYet < contentLength)
-				{
-					int recvd = ::recv(theSocket, reinterpret_cast<char*>(recvBuffer), sizeof(recvBuffer), 0);
-					if (recvd <= 0)
-					{
-						if (isConnectionClose)
-							return "closed";
-						else
-							return "Network Error";
-					}
-
-					requestPayloadBytes.resize(requestPayloadBytes.size() + recvd);
-					memcpy(requestPayloadBytes.data() + requestPayloadBytes.size() - recvd, recvBuffer, recvd);
-
-					recvYet += recvd;
-				}
-			}
+		if (remainderSize > 0)
+		{
+			Payload->Bytes.resize(remainderSize);
+			memcpy(Payload->Bytes.data(), remainderBytes, remainderSize);
 		}
 
+		m_pacifier(m_module, m_type, "Recv: recv payload");
+		size_t recvYet = remainderSize;
+		while (true)
+		{
+			if (contentLength > 0 && recvYet >= contentLength)
+				break;
+
+			int recvd = ::recv(theSocket, reinterpret_cast<char*>(recvBuffer), sizeof(recvBuffer), 0);
+			if (recvd <= 0)
+			{
+				if (isConnectionClose)
+					return ReturnErrorMsg("Recv: recv payload", "closed");
+				else
+					return ReturnErrorMsg("Recv: recv payload", "Network Error");
+			}
+
+			requestPayloadBytes.resize(requestPayloadBytes.size() + recvd);
+			memcpy(requestPayloadBytes.data() + requestPayloadBytes.size() - recvd, recvBuffer, recvd);
+
+			recvYet += recvd;
+		}
+
+		m_pacifier(m_module, m_type, "Recv: All done.");
 		return std::string();
 	}
 
 	std::string Message::Send(SOCKET theSocket) const
 	{
+		m_pacifier(m_module, m_type, "Send");
 		{
+			m_pacifier(m_module, m_type, "Send: send header");
 			std::string headers = GetTotalHeader();
 			const char* headersData = headers.c_str();
 			int toSend = static_cast<int>(headers.length());
@@ -128,14 +172,21 @@ namespace httplite
 			{
 				int newSent = ::send(theSocket, headersData + sentYet, toSend - sentYet, 0);
 				if (newSent == 0)
-					return "Connection Closed";
+					return ReturnErrorMsg("Send: send header", "Connection Closed");
 				if (newSent < 0)
-					return "Network Error";
+					return ReturnErrorMsg("Send: send header", "Network Error");
 				sentYet += newSent;
 			}
 		}
 
-		if (Payload.has_value())
+		if (!Payload.has_value())
+		{
+			m_pacifier(m_module, m_type, "Send: no payload to send, All done.");
+			return std::string();
+		}
+		else
+			m_pacifier(m_module, m_type, "Send: send payload");
+
 		{
 			const std::vector<uint8_t>& bytesToSendVec = Payload->Bytes;
 			const char* bytesToSend = reinterpret_cast<const char*>(bytesToSendVec.data());
@@ -145,13 +196,14 @@ namespace httplite
 			{
 				int newSent = ::send(theSocket, bytesToSend + sentYet, toSend - sentYet, 0);
 				if (newSent == 0)
-					return "Connection Closed";
+					return ReturnErrorMsg("Send: send payload", "Connection Closed");
 				if (newSent < 0)
-					return "Network Error";
+					return ReturnErrorMsg("Send: send payload", "Network Error");
 				sentYet += newSent;
 			}
 		}
 
+		m_pacifier(m_module, m_type, "Send: All done.");
 		return std::string();
 	}
 }

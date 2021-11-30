@@ -10,7 +10,7 @@ namespace httplite
 	class HttpClient
 	{
 	public:
-		HttpClient(const std::string& serverIpAddress, uint16_t port);
+		HttpClient(const std::string& serverIpAddress, uint16_t port, Pacifier pacifier);
 		~HttpClient();
 
 		void EnsureConnected();
@@ -23,6 +23,7 @@ namespace httplite
 
 		std::string m_serverIpAddress;
 		uint16_t m_port;
+		Pacifier m_pacifier;
 
 		bool m_isConnected;
 	};

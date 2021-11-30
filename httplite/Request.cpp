@@ -120,13 +120,4 @@ namespace httplite
 
 		return std::string();
 	}
-
-	bool Request::ShouldRecvPayload(size_t remainderSize) const
-	{
-		if (Verb == "GET")
-			return false;
-
-		int64_t contentLength = GetContentLength();
-		return contentLength > 0 || remainderSize > 0;
-	}
 }
