@@ -19,6 +19,7 @@ namespace httplite
 	private:
 		void AcceptConnections();
 		void JoinThreads();
+		void DoJoinThreads();
 
 	private:
 		uint16_t m_port;
@@ -30,11 +31,12 @@ namespace httplite
 		SOCKET m_listenSocket;
 		std::shared_ptr<std::thread> m_listenThread;
 
-		std::shared_ptr<std::thread> m_threadJoinThread;
 
 		void ServeClient(SOCKET clientSocket);
+
 		std::unordered_map<SOCKET, std::shared_ptr<std::thread>> m_clients;
-		std::vector< std::shared_ptr<std::thread>> m_threadsToJoin;
+		std::vector<std::shared_ptr<std::thread>> m_threadsToJoin;
+		std::shared_ptr<std::thread> m_threadJoinThread;
 		std::mutex m_clientsMutex;
 	};
 }

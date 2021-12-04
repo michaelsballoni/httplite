@@ -6,6 +6,8 @@ namespace httplite
 {
 	struct Buffer
 	{
+		std::vector<uint8_t> Bytes;
+
 		Buffer() {}
 		Buffer(const std::wstring& str)
 		{
@@ -19,14 +21,10 @@ namespace httplite
 			if (Bytes.empty())
 				return std::wstring();
 
-			std::string utf8
-			(
-				reinterpret_cast<const char*>(&Bytes.front()), 
-				reinterpret_cast<const char*>(&Bytes.back())
-			);
+			std::string utf8;
+			utf8.resize(Bytes.size());
+			memcpy(const_cast<char*>(utf8.c_str()), Bytes.data(), Bytes.size());
 			return toWideStr(utf8);
 		}
-
-		std::vector<uint8_t> Bytes;
 	};
 }

@@ -14,32 +14,24 @@ namespace httplite
 
 	bool Message::IsConnectionClose() const
 	{
-		for (const auto& header : Headers)
-		{
-			if
-			(
-				toLower(header.first) == "connection"
-				&&
-				toLower(header.second).find("keep-alive") != std::string::npos
-			)
-			{
-				return false;
-			}
-		}
+		const auto& headerIt = Headers.find("Connection");
+		if (headerIt == Headers.end())
+			return true;
+
+		if (toLower(headerIt->second).find("keep-alive") != std::string::npos)
+			return false;
+
 		return true;
 	}
 
 	int64_t Message::GetContentLength() const
 	{
-		for (const auto& header : Headers)
-		{
-			if (toLower(header.first) == "content-length")
-			{
-				int64_t contentLength = _atoi64(header.second.c_str());
-				return contentLength;
-			}
-		}
-		return -1;
+		const auto& headerIt = Headers.find("Content-Length");
+		if (headerIt == Headers.end())
+			return -1;
+
+		int64_t contentLength = _atoi64(headerIt->second.c_str());
+		return contentLength;
 	}
 
 	std::string Message::GetCommonHeader() const
@@ -50,7 +42,7 @@ namespace httplite
 			header += headerIt.first + ": " + headerIt.second + "\r\n";
 
 		if (Payload.has_value() && Headers.find("Content-Length") == Headers.end())
-			header += "Content-Length: " + num2str(Payload->Bytes.size()) + "\r\n";
+			header += "Content-Length: " + num2str(static_cast<double>(Payload->Bytes.size())) + "\r\n";
 
 		if (Headers.find("Connection") == Headers.end())
 			header += "Connection: keep-alive\r\n";
@@ -75,6 +67,9 @@ namespace httplite
 		while (true)
 		{
 			int recvd = ::recv(theSocket, reinterpret_cast<char*>(recvBuffer), sizeof(recvBuffer), 0);
+#ifdef _DEBUG
+			m_pacifier(m_module, m_type, ("Recv: recv header: recvd " + std::to_string(recvd)).c_str());
+#endif
 			if (recvd == 0)
 				return ReturnErrorMsg("Recv: recv header", "closed");
 			if (recvd < 0)
@@ -94,9 +89,11 @@ namespace httplite
 		m_pacifier(m_module, m_type, "Recv: GetRemainder");
 		size_t remainderSize = 0;
 		const uint8_t* remainderBytes = reader.GetRemainder(remainderSize);
+		m_pacifier(m_module, m_type, ("Recv: GetRemainder: remainderSize " + std::to_string(remainderSize)).c_str());
 
 		bool isConnectionClose = IsConnectionClose();
 		int64_t contentLength = GetContentLength();
+		m_pacifier(m_module, m_type, ("Recv: GetRemainder: contentLength " + std::to_string(contentLength)).c_str());
 
 		bool isGetRequest =
 			typeid(*this) == typeid(Request)
@@ -137,10 +134,13 @@ namespace httplite
 		size_t recvYet = remainderSize;
 		while (true)
 		{
-			if (contentLength > 0 && recvYet >= contentLength)
+			if (contentLength > 0 && recvYet >= static_cast<size_t>(contentLength))
 				break;
 
 			int recvd = ::recv(theSocket, reinterpret_cast<char*>(recvBuffer), sizeof(recvBuffer), 0);
+#ifdef _DEBUG
+			m_pacifier(m_module, m_type, ("Recv: recv payload: recvd " + std::to_string(recvd)).c_str());
+#endif
 			if (recvd <= 0)
 			{
 				if (isConnectionClose)
@@ -171,6 +171,9 @@ namespace httplite
 			while (sentYet < toSend)
 			{
 				int newSent = ::send(theSocket, headersData + sentYet, toSend - sentYet, 0);
+#ifdef _DEBUG
+    			m_pacifier(m_module, m_type, ("Send: send header: newSent " + std::to_string(newSent)).c_str());
+#endif
 				if (newSent == 0)
 					return ReturnErrorMsg("Send: send header", "Connection Closed");
 				if (newSent < 0)
@@ -190,11 +193,17 @@ namespace httplite
 		{
 			const std::vector<uint8_t>& bytesToSendVec = Payload->Bytes;
 			const char* bytesToSend = reinterpret_cast<const char*>(bytesToSendVec.data());
-			size_t toSend = bytesToSendVec.size();
-			size_t sentYet = 0;
+			if (bytesToSendVec.size() > INT_MAX)
+				return ReturnErrorMsg("Send: send payload", "Response Too Large");
+			int toSend = static_cast<int>(bytesToSendVec.size());
+			m_pacifier(m_module, m_type, ("Send: send payload: toSend " + std::to_string(toSend)).c_str());
+			int sentYet = 0;
 			while (sentYet < toSend)
 			{
 				int newSent = ::send(theSocket, bytesToSend + sentYet, toSend - sentYet, 0);
+#ifdef _DEBUG
+    			m_pacifier(m_module, m_type, ("Send: send payload: newSent " + std::to_string(newSent)).c_str());
+#endif
 				if (newSent == 0)
 					return ReturnErrorMsg("Send: send payload", "Connection Closed");
 				if (newSent < 0)

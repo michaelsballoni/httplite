@@ -11,7 +11,6 @@ namespace httplite
 	TEST_CLASS(CoreTests)
 	{
 	public:
-
 		TEST_METHOD(TestSplit)
 		{
 			std::vector<std::string> strs;

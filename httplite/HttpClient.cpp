@@ -4,9 +4,9 @@
 
 namespace httplite
 {
-	HttpClient::HttpClient(const std::string& serverIpAddress, uint16_t port, Pacifier pacifier)
+	HttpClient::HttpClient(const std::string& server, uint16_t port, Pacifier pacifier)
 		: m_socket(INVALID_SOCKET)
-		, m_serverIpAddress(serverIpAddress)
+		, m_server(server)
 		, m_port(port)
 		, m_pacifier(pacifier)
 		, m_isConnected(false)
@@ -28,10 +28,15 @@ namespace httplite
 		if (m_socket == INVALID_SOCKET)
 			throw NetworkError("HttpClient: Creating client failed");
 
+		m_pacifier("HttpClient", "EnsureConnected", "gethostbyname");
+		struct hostent* host = gethostbyname(m_server.c_str());
+		if (host == nullptr)
+			throw NetworkError("HttpClient: Resolving server address failed");
+
 		m_pacifier("HttpClient", "EnsureConnected", "connect");
 		sockaddr_in serverAddr;
 		serverAddr.sin_family = AF_INET;
-		serverAddr.sin_addr.s_addr = inet_addr(m_serverIpAddress.c_str());
+		serverAddr.sin_addr = *(struct in_addr*)(host->h_addr);
 		serverAddr.sin_port = htons(m_port);
 		if (::connect(m_socket, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(serverAddr)) == SOCKET_ERROR)
 			throw NetworkError("HttpClient: Connecting client failed");
@@ -59,7 +64,6 @@ namespace httplite
 	Response HttpClient::ProcessRequest(const Request& request)
 	{
 		EnsureConnected();
-
 #ifndef _DEBUG
 		try
 #endif

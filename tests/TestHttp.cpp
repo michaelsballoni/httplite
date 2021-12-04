@@ -37,7 +37,7 @@ namespace httplite
 			HttpServer server(uint16_t(16384), &HandleRequest, &pacify);
 			server.StartServing();
 
-			HttpClient client("127.0.0.1", uint16_t(16384), &pacify);
+			HttpClient client("localhost", uint16_t(16384), &pacify);
 
 			client.EnsureConnected();
 			client.EnsureConnected();

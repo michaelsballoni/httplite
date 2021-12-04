@@ -50,6 +50,7 @@ namespace httplite
 
 		m_pacifier("HttpServer", "StopServing", "close(listener)");
 		::closesocket(m_listenSocket);
+		m_listenSocket = INVALID_SOCKET;
 
 		m_pacifier("HttpServer", "StopServing", "join(listener)");
 		if (m_listenThread != nullptr && m_listenThread->joinable())
@@ -70,7 +71,10 @@ namespace httplite
 				if (clientIt.second->joinable())
 					clientIt.second->join();
 			}
+			m_clients.clear();
 		}
+
+		DoJoinThreads();
 
 		m_pacifier("HttpServer", "StopServing", "All done.");
 	}
@@ -144,11 +148,11 @@ namespace httplite
 			}
 		}
 
-		if (m_threadJoinThread != nullptr)
+		if (m_keepRunning)
 		{
 			std::lock_guard<std::mutex> lock(m_clientsMutex);
-			m_threadsToJoin.push_back(m_clients[clientSocket]);
-			m_clients.erase(clientSocket);
+			m_threadsToJoin.push_back(m_clients[clientSocket]); // order
+			m_clients.erase(clientSocket);                      // matters
 		}
 	}
 
@@ -156,13 +160,16 @@ namespace httplite
 	{
 		while (m_keepRunning)
 		{
-			{
-				std::lock_guard<std::mutex> lock(m_clientsMutex);
-				for (auto& threadToJoin : m_threadsToJoin)
-					threadToJoin->join();
-				m_threadsToJoin.clear();
-			}
+			DoJoinThreads();
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
+	}
+
+	void HttpServer::DoJoinThreads()
+	{
+		std::lock_guard<std::mutex> lock(m_clientsMutex);
+		for (auto& threadToJoin : m_threadsToJoin)
+			threadToJoin->join();
+		m_threadsToJoin.clear();
 	}
 }
