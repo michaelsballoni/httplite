@@ -34,7 +34,7 @@ namespace httplite
 			// Capture where the remainder starts and what's left, if any
 			m_remainderStart = reinterpret_cast<uint8_t*>(m_headersEnd) + 4;
 			m_remainderCount = m_buffer.size() - (m_remainderStart - m_buffer.data());
-			if (m_remainderCount == 0) // don't just point any old place
+			if (m_remainderCount == 0) // don't just point to any old place
 				m_remainderStart = nullptr;
 			return true;
 		}

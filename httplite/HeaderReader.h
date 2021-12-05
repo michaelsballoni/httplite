@@ -4,6 +4,12 @@
 
 namespace httplite
 {
+	/// <summary>
+	/// HeaderReader is responsible for buffer
+	/// data read from a socket until the \r\n\r\n
+	/// is reached, yielding the total header string
+	/// and a buffer of remaining data
+	/// </summary>
 	class HeaderReader
 	{
 	public:

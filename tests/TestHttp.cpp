@@ -9,9 +9,9 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace httplite
 {
-	static Response HandleRequest(const Request& request, Pacifier pacifier)
+	static Response HandleRequest(const Request& request)
 	{
-		Response response("HandleRequest", pacifier);
+		Response response;
 		if (request.Verb == "GET")
 		{
 			response.Payload.emplace(L"reversrever");
@@ -34,10 +34,10 @@ namespace httplite
 	public:
 		TEST_METHOD(TestHttpConnectionServing)
 		{
-			HttpServer server(uint16_t(16384), &HandleRequest, &pacify);
+			HttpServer server(uint16_t(16384), &HandleRequest);
 			server.StartServing();
 
-			HttpClient client("localhost", uint16_t(16384), &pacify);
+			HttpClient client("localhost", uint16_t(16384));
 
 			client.EnsureConnected();
 			client.EnsureConnected();
@@ -51,12 +51,12 @@ namespace httplite
 
 		TEST_METHOD(TestHttpGet)
 		{
-			HttpServer server(uint16_t(16384), &HandleRequest, &pacify);
+			HttpServer server(uint16_t(16384), &HandleRequest);
 			server.StartServing();
 
 			{
-				HttpClient client("127.0.0.1", uint16_t(16384), &pacify);
-				Request getRequest("TestHttpGet", &pacify);
+				HttpClient client("127.0.0.1", uint16_t(16384));
+				Request getRequest;
 				Response getResponse = client.ProcessRequest(getRequest);
 				Assert::IsTrue(getResponse.Payload.has_value());
 				Assert::AreEqual(toWideStr("reversrever"), getResponse.Payload->ToString());
@@ -65,12 +65,12 @@ namespace httplite
 
 		TEST_METHOD(TestHttpPost)
 		{
-			HttpServer server(uint16_t(16384), &HandleRequest, &pacify);
+			HttpServer server(uint16_t(16384), &HandleRequest);
 			server.StartServing();
 
 			{
-				HttpClient client("127.0.0.1", uint16_t(16384), &pacify);
-				Request postRequest("TestHttpPost", &pacify);
+				HttpClient client("127.0.0.1", uint16_t(16384));
+				Request postRequest;
 				postRequest.Verb = "POST";
 				postRequest.Payload.emplace(L"1234");
 				Response postResponse = client.ProcessRequest(postRequest);

@@ -16,9 +16,9 @@ using namespace httplite;
 // and POST's by reversing and returning the posted string
 // This type of function can take advantage of the simple 
 // interface of the Request class to support rich request handling
-static Response HandleRequest(const Request& request, Pacifier pacifier)
+static Response HandleRequest(const Request& request)
 {
-	Response response("HandleRequest", pacifier);
+	Response response;
 	if (request.Verb == "GET")
 	{
 		printf("GET: reversrever\n");
@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
 		// Start serving on the port, providing
 		// the request handling function
 		printf("Starting serving on port %d...\n", (int)port);
-		HttpServer server(port, &HandleRequest, &pacify);
+		HttpServer server(port, &HandleRequest);
 		server.StartServing();
 
 		// Run until commanded to stop

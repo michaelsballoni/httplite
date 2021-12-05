@@ -20,7 +20,7 @@ namespace httplite
 				"Connection: close\r\n"
 				"\r\n";
 
-			Response response("TestResponse", &pacify);
+			Response response;
 			response.ReadHeader(header);
 
 			Assert::AreEqual(500, int(response.GetStatusCode()));

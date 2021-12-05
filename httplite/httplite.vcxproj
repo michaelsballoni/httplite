@@ -171,7 +171,7 @@
     <ClInclude Include="HttpServer.h" />
     <ClInclude Include="Includes.h" />
     <ClInclude Include="Core.h" />
-    <ClInclude Include="Message.h" />
+    <ClInclude Include="MessageBase.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Request.h" />
     <ClInclude Include="Response.h" />
@@ -181,7 +181,7 @@
     <ClCompile Include="HeaderReader.cpp" />
     <ClCompile Include="HttpClient.cpp" />
     <ClCompile Include="HttpServer.cpp" />
-    <ClCompile Include="Message.cpp" />
+    <ClCompile Include="MessageBase.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

@@ -85,22 +85,10 @@ namespace httplite
 		return std::string();
 	}
 
-	Response Response::CreateErrorResponse
-	(
-		const char* module, 
-		uint16_t errorCode, 
-		const std::string& errorMsg, 
-		Pacifier pacifier
-	)
+	Response Response::CreateErrorResponse(uint16_t code, const std::string& msg)
 	{
-		pacifier
-		(
-			module, 
-			"CreateErrorResponse", 
-			("Error: " + std::to_string(errorCode) + " " + errorMsg).c_str()
-		);
-		Response response(module, pacifier);
-		response.Status = std::to_string(errorCode) + " " + errorMsg;
+		Response response;
+		response.Status = std::to_string(code) + " " + msg;
 		response.Headers.insert({ "Connection", "close" });
 		return response;
 	}

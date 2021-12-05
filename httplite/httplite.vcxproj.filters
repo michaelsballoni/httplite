@@ -42,7 +42,7 @@
     <ClInclude Include="HttpServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Message.h">
+    <ClInclude Include="MessageBase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -68,7 +68,7 @@
     <ClCompile Include="HttpServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Message.cpp">
+    <ClCompile Include="MessageBase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

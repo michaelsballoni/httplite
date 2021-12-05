@@ -1,16 +1,19 @@
 #pragma once
 
-#include "Message.h"
+#include "MessageBase.h"
 
 namespace httplite
 {
-	class Request : public Message
+	/// <summary>
+	/// Request implements MessageBase so that...
+	/// In a client, populate a Request and get it processed
+	/// to yield a Response for you to consume
+	/// In a server, receive a Request and process it
+	/// to yield a Response to return to the client
+	/// </summary>
+	class Request : public MessageBase
 	{
 	public:
-		Request(const char* module, Pacifier pacifier = {})
-			: Message(module, "request", pacifier)
-		{}
-
 		std::string Verb = "GET";
 		std::vector<std::wstring> Path;
 		std::unordered_map<std::wstring, std::wstring> Query;

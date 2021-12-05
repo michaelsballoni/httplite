@@ -33,7 +33,7 @@ int wmain(int argc, wchar_t* argv[])
 
 		// Create our HTTP request, akin to .NET's HttpWebRequest,
 		// with the verb...
-		Request request("HttpClient", &pacify);
+		Request request;
 		request.Verb = verb;
 		if (request.Verb != "GET" && request.Verb != "POST")
 		{
@@ -56,7 +56,7 @@ int wmain(int argc, wchar_t* argv[])
 
 		// Create the HTTP client that will process
 		// our request
-		HttpClient client(server, port, &pacify);
+		HttpClient client(server, port);
 
 		// Do the deed, getting a Response object back
 		printf("Processing request:\n%s", request.GetTotalHeader().c_str());

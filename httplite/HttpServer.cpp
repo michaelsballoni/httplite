@@ -4,10 +4,9 @@
 
 namespace httplite
 {
-	HttpServer::HttpServer(uint16_t port, RequestHandler function, Pacifier pacifier)
+	HttpServer::HttpServer(uint16_t port, RequestHandler function)
 		: m_port(port)
 		, m_function(function)
-		, m_pacifier(pacifier)
 		, m_keepRunning(true)
 		, m_listenSocket(INVALID_SOCKET)
 	{
@@ -20,26 +19,22 @@ namespace httplite
 
 	void HttpServer::StartServing()
 	{
-		m_pacifier("HttpServer", "StartServing", "socket");
 		m_listenSocket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (m_listenSocket == INVALID_SOCKET)
-			throw NetworkError("HttpServer: Creating listener failed");
+			throw NetworkError("Creating listener failed");
 
-		m_pacifier("HttpServer", "StartServing", "bind");
 		sockaddr_in serverAddr;
 		serverAddr.sin_family = AF_INET;
 		serverAddr.sin_addr.s_addr = INADDR_ANY;
 		serverAddr.sin_port = htons(m_port);
 		if (::bind(m_listenSocket, (const sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
-			throw NetworkError("HttpServer: Binding listener to port failed");
+			throw NetworkError("Binding listener to port failed");
 
-		m_pacifier("HttpServer", "StartServing", "listen");
 		if (::listen(m_listenSocket, 1000) == SOCKET_ERROR)
-			throw NetworkError("HttpServer: Starting listening failed");
+			throw NetworkError("Starting listener failed");
 
 		m_listenThread = std::make_shared<std::thread>(&HttpServer::AcceptConnections, this);
 		m_threadJoinThread = std::make_shared<std::thread>(&HttpServer::JoinThreads, this);
-		m_pacifier("HttpServer", "StartServing", "All done.");
 	}
 
 	void HttpServer::StopServing()
@@ -48,21 +43,17 @@ namespace httplite
 			return;
 		m_keepRunning = false;
 
-		m_pacifier("HttpServer", "StopServing", "close(listener)");
 		::closesocket(m_listenSocket);
 		m_listenSocket = INVALID_SOCKET;
 
-		m_pacifier("HttpServer", "StopServing", "join(listener)");
 		if (m_listenThread != nullptr && m_listenThread->joinable())
 			m_listenThread->join();
 		m_listenThread = nullptr;
 
-		m_pacifier("HttpServer", "StopServing", "join(joiner)");
 		if (m_threadJoinThread != nullptr && m_threadJoinThread->joinable())
 			m_threadJoinThread->join();
 		m_threadJoinThread = nullptr;
 
-		m_pacifier("HttpServer", "StopServing", "close(clients)");
 		{
 			std::lock_guard<std::mutex> lock(m_clientsMutex);
 			for (const auto& clientIt : m_clients)
@@ -75,23 +66,16 @@ namespace httplite
 		}
 
 		DoJoinThreads();
-
-		m_pacifier("HttpServer", "StopServing", "All done.");
 	}
 
 	void HttpServer::AcceptConnections()
 	{
 		while (true)
 		{
-			m_pacifier("HttpServer", "AcceptConnections", "accept");
 			SOCKET clientSocket = ::accept(m_listenSocket, nullptr, nullptr);
 			if (clientSocket == INVALID_SOCKET)
-			{
-				m_pacifier("HttpServer", "AcceptConnections", "accept...returning");
 				return;
-			}
 
-			m_pacifier("HttpServer", "AcceptConnections", "accept...new connection");
 			auto newThread =
 				std::make_shared<std::thread>
 				(
@@ -107,48 +91,53 @@ namespace httplite
 
 	void HttpServer::ServeClient(SOCKET clientSocket)
 	{
-		while (true)
+		while (m_keepRunning)
 		{
-			Request request("HttpServer", m_pacifier);
+			Request request;
 			std::string messageReadError = request.Recv(clientSocket);
 			if (messageReadError == "closed" || messageReadError == "Network Error")
 				break;
 
-			Response response("HttpServer", m_pacifier);
 			if (!messageReadError.empty())
 			{
-				response = Response::CreateErrorResponse("HttpServer", 400, messageReadError, m_pacifier);
-			}
-			else
-			{
-				std::string functionErrorMessage;
-				try
-				{
-					response = m_function(request, m_pacifier);
-				}
-				catch (const std::exception& exp)
-				{
-					functionErrorMessage = exp.what();
-				}
-				catch (...)
-				{
-					functionErrorMessage = "unknown";
-				}
-				if (!functionErrorMessage.empty())
-				{
-					response = Response::CreateErrorResponse("HttpServer", 500, functionErrorMessage, m_pacifier);
-				}
-			}
-
-			std::string sendResponseError = response.Send(clientSocket);
-			if (!sendResponseError.empty())
-			{
-				m_pacifier("HttpServer", "ServerClient", ("Send error: " + sendResponseError).c_str());
+				Response errorResponse = Response::CreateErrorResponse(400, messageReadError);
+				errorResponse.Send(clientSocket);
 				break;
 			}
+
+			std::string functionErrorMessage;
+			Response functionResponse;
+			try
+			{
+				functionResponse = m_function(request);
+			}
+			catch (const std::exception& exp)
+			{
+				functionErrorMessage = exp.what();
+			}
+			catch (...)
+			{
+				functionErrorMessage = "unknown";
+			}
+
+			if (!functionErrorMessage.empty())
+			{
+				Response errorResponse = Response::CreateErrorResponse(500, functionErrorMessage);
+				errorResponse.Send(clientSocket);
+				break;
+			}
+		
+			if (!m_keepRunning)
+				break;
+
+			std::string sendResponseError = functionResponse.Send(clientSocket);
+			if (!sendResponseError.empty())
+				break;
 		}
 
-		if (m_keepRunning)
+		::closesocket(clientSocket);
+
+		if (m_keepRunning) // otherwise StopServing deals with this
 		{
 			std::lock_guard<std::mutex> lock(m_clientsMutex);
 			m_threadsToJoin.push_back(m_clients[clientSocket]); // order
