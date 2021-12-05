@@ -4,11 +4,21 @@
 
 namespace httplite
 {
+	/// <summary>
+	/// Buffer manages the payloads sent to-and-from
+	/// HTTP clients and servers
+	/// </summary>
 	struct Buffer
 	{
+		// The bytes of the payload
 		std::vector<uint8_t> Bytes;
 
 		Buffer() {}
+
+		/// <summary>
+		/// Create this buffer using a wstring
+		/// </summary>
+		/// <param name="str">wstring to initialize this payload with</param>
 		Buffer(const std::wstring& str)
 		{
 			std::string utf8 = toNarrowStr(str);
@@ -16,6 +26,10 @@ namespace httplite
 			memcpy(Bytes.data(), utf8.c_str(), utf8.length());
 		}
 
+		/// <summary>
+		/// Bytes->string conversion
+		/// </summary>
+		/// <returns>wstring decoded from payload bytes</returns>
 		std::wstring ToString() const
 		{
 			if (Bytes.empty())
