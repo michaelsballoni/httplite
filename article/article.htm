@@ -1,0 +1,359 @@
+﻿<!DOCTYPE HTML>
+<!--------------------------------------------------------------------------->  
+<!--                           INTRODUCTION                                
+
+ The CodeProject article submission template (HTML version)
+
+Using this template will help us post your article sooner. To use, just 
+follow the 3 easy steps below:
+ 
+     1. Fill in the article description details
+     2. Add links to your images and downloads
+     3. Include the main article text
+
+That's all there is to it! All formatting will be done by our submission
+scripts and style sheets. 
+
+-->  
+<!--------------------------------------------------------------------------->  
+<!--                        IGNORE THIS SECTION                            -->
+<html>
+<head>
+<title>CodeProject</title>
+<Style>
+BODY, P, TD { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 10pt }
+BODY {padding:15px; }
+H2,H3,H4,H5 { color: #ff9900; font-weight: bold; }
+H2 { font-size: 13pt; }
+H3 { font-size: 12pt; }
+H4 { font-size: 10pt; color: black; }
+PRE { BACKGROUND-COLOR: #FBEDBB; FONT-FAMILY: "Courier New", Courier, mono; WHITE-SPACE: pre; }
+CODE { COLOR: #990000; FONT-FAMILY: "Courier New", Courier, mono; }
+</style>
+<link type="text/css" rel="stylesheet" 
+      href="https://codeproject.global.ssl.fastly.net/App_Themes/CodeProject/Css/Main.min.css">
+</head>
+<body bgcolor="#FFFFFF" color=#000000>
+<!--------------------------------------------------------------------------->  
+
+
+<!-------------------------------     STEP 1      --------------------------->
+<!--  Fill in the details (CodeProject will reformat this section for you) -->
+
+	<pre>
+Title:       httplite: C++ REST processing class library
+Description: Interested in easily implementing REST communications in your Windows C++ apps?
+Abstract:    This article documents the httplite C++ class library
+             and how it can be integrated into Windows C++ applications
+             for inter-process or network communication.
+
+Author:      Michael Sydney Balloni
+Email:       balloni.michael@yahoo.com
+
+Language:    C++
+Platform:    Windows
+Technology:  REST APIs, HTTP
+Topic:       Network Communication
+
+Section      Not
+SubSection   Sure
+
+License:     CPOL
+</pre>
+
+<!-------------------------------     STEP 2      --------------------------->
+<!--  Include download and sample image information.                       --> 
+
+<ul class=download>
+<li><a href="Article_src.zip">Download source - 32 KB</a></li>
+</ul>
+
+<!-------------------------------     STEP 3      --------------------------->
+
+<!--  Add the article text. Please use simple formatting (<h2>, <p> etc)   -->
+
+<h2>Introduction</h2>
+<p>
+	Why httplite?
+</p>
+<p>
+	Because you do not always want to jump through ASP.NET through C++/CLI
+	just to get back into your C++ code...just to add a side communication channel
+	to your Windows C++ app.
+</p>
+<p>
+	You're not trying to create or use an internet-scale web server.
+	You just want to add some request processing to your app
+	for inter-process or LAN networking.
+</p>
+<p>
+    In this article you will learn about the httplite class library
+    and how you can integrate it into your Windows applications.
+</p>
+<p>
+    This class library makes it trivial to add HTTP request processing
+    to any Windows application, enabling REST communication with any
+    HTTP/1.0 client library, including the one provided by the library.
+</p>
+
+<h2>The Article Body</h2>
+<p>
+    httplite is best understood by looking at the proof of concept
+    httpserver application shipped with the class library.
+</p>
+<p>
+	This app responds to any GET with "reversrever",
+	and to any POST'd string with the string reversed.
+	Simple enough.  But how much plumbing would that take
+	in ASP.NET to get to that C++?  Your C++, non-trivial stuff.
+</p>
+
+<h3>httpserver - the proof of concept httplite HTTP/1.0 server</h3>
+<pre>// This is all that's needed to integrate with httplite and process requests
+#include "HttpServer.h"
+#pragma comment(lib, "httplite")
+using namespace httplite;
+
+#include &lt;iostream&gt; // getline
+
+// This function defines how the web server will response to requests
+// This is a basic request handler, handling GET with a simple string
+// and POST's by reversing and returning the posted string
+// This type of function can take advantage of the simple 
+// interface of the Request class to support rich request handling
+static Response HandleRequest(const Request& request)
+{
+	Response response;
+	if (request.Verb == "GET")
+	{
+		// Put the response string into the Payload output object
+		response.Payload.emplace(L"reversrever"); 
+	}
+	else if (request.Verb == "POST")
+	{
+		// Get the POST'd string, reverse it, and set it as the output
+		std::wstring str = request.Payload-&gt;ToString();
+		std::reverse(str.begin(), str.end());
+		response.Payload.emplace(str);
+	}
+	return response;
+}
+
+int main(int argc, char* argv[])
+{
+	uint16_t port = uint16_t(atoi(argv[1]));
+
+	printf("Starting serving on port %d...\n", (int)port);
+	HttpServer server(port, &HandleRequest);
+	server.StartServing(); // binds to port, accepts connections
+
+	printf("Hit [Enter] to stop serving and close the program:\n");
+	std::string line;
+	std::getline(std::cin, line); // program spends its life here
+	return 0;
+}
+</pre>
+
+<h3>Integrating with httplite</h3>
+<p>
+	To integrate with httplite to power request processing (serving)...
+	<ol>
+		<li>Build the httplite solution</li>
+		<li>Link against the httplib.lib static library</li>
+		<li>Include HttpServer.h in your source</li>
+		<li>
+			Write your request handler with the signature
+			<pre>Response HandleRequest(const Request& request)</pre>
+		</li>
+		<li>
+			Create your HttpServer object,
+			passing in the TCP port of your choosing
+			and your request handler function
+		</li>
+		<li>
+			Call StartServing() when your app is ready to handle requests
+		</li>
+		<li>
+			Call StopServing() for orderly shutdown.
+			Note that you cannot call StartServing again after you have called StopServing.
+			You could create a new HttpServer object to solve that requirement.
+		</li>
+	</ol>
+</p>
+
+<h3>httplite Implementation</h3>
+<p>
+	Most of the library is implemented by an abstract base class
+	MessageBase:
+</p>
+<pre>class MessageBase
+{
+public:
+	virtual ~MessageBase() {} // for derived types
+
+	// Data structures common to Request and Response
+	std::unordered_map&lt;std::string, std::string&gt; Headers;
+	std::optional&lt;Buffer&gt; Payload;
+
+	// Header convenience methods
+	bool IsConnectionClose() const;
+	int GetContentLength() const;
+
+	// Core message networking routines
+	std::string Recv(SOCKET theSocket);
+	std::string Send(SOCKET theSocket) const;
+
+	// Request and Response need to define header behavior
+	virtual std::string GetTotalHeader() const = 0;
+	virtual std::string ReadHeader(const char* headerStart) = 0;
+
+protected:
+	// Get the parts of the header that are common
+	// between Request and Response
+	std::string GetCommonHeader() const;
+};
+</pre>
+<p>
+	Recv and Send are where the bulk of the code in the library resides.
+	The derived types Request and Response just implement GetTotalHeader()
+	and ReadHeader() to handle how headers are different between Requests
+	and Responses.  
+</p>
+<p>
+	GetTotalHeader() must take the member variables and return the complete HTTP header.
+</p>
+<p>
+	ReadHeader() must parse an HTTP header and populate the member variables, 
+	returning an error message on failure or "" on success.
+</p>
+<p>
+	The derived types, Request and Response are very simple,
+	only adding type-specific member variables and header generation and parsing.
+</p>
+<pre>class Request : public MessageBase
+{
+public:
+	std::string Verb = "GET";
+	std::vector&lt;std::wstring&gt; Path;
+	std::unordered_map&lt;std::wstring, std::wstring&gt; Query;
+
+	virtual std::string GetTotalHeader() const;
+	virtual std::string ReadHeader(const char* headerStart);
+};
+
+class Response : public MessageBase
+{
+public:
+	std::string Status = "200 OK"; // Code + "decimal" part + Description, "500.100 Internal ASP Error"
+
+	std::uint16_t GetStatusCode() const;
+	std::wstring GetStatusDescription() const;
+
+	static Response CreateErrorResponse(uint16_t code, const std::string& msg);
+
+	virtual std::string GetTotalHeader() const;
+	virtual std::string ReadHeader(const char* headerStart);
+};
+</pre>
+
+<h3>HeaderReader Consumes HTTP Headers</h3>
+<p>
+	The HeaderReader class is responsible for receiving data until the all-important \r\n\r\n
+	is found.  
+	Doing this efficiently and cleanly was a fun exercise in high- and low-level coding.
+</p>
+<pre>class HeaderReader
+{
+public:
+	HeaderReader()
+		: m_headersEnd(nullptr)
+		, m_remainderStart(nullptr)
+		, m_remainderCount(0)
+	{}
+
+	/// &lt;summary&gt;
+	/// Call OnMoreData as data comes in, until it returns true, 
+	/// or GetSize exceeds your threshold of pain of buffer memory usage.
+	/// Then you can call GetHeaders and GetRemainder to tease out the goodies.
+	/// &lt;/summary&gt;
+	/// &lt;param name="data"&gt;pointer to new data&lt;/param&gt;
+	/// &lt;param name="count"&gt;amount of new data&lt;/param&gt;
+	/// &lt;returns&gt;true if headers fully read&lt;/returns&gt;
+	bool OnMoreData(const uint8_t* data, const size_t count);
+
+	size_t GetSize() const
+	{
+		return m_buffer.size();
+	}
+
+	const char* GetHeaders() const
+	{
+		return reinterpret_cast&lt;const char*&gt;(m_buffer.data());
+	}
+
+	const uint8_t* GetRemainder(size_t& count) const
+	{
+		count = m_remainderCount;
+		return m_remainderStart;
+	}
+
+private:
+	std::vector&lt;uint8_t&gt; m_buffer;
+
+	char* m_headersEnd;
+
+	uint8_t* m_remainderStart;
+	size_t m_remainderCount;
+};
+
+...
+
+bool HeaderReader::OnMoreData(const uint8_t* data, const size_t count)
+{
+	// You cannot call this function again once headers have been returned
+	if (m_headersEnd != nullptr)
+	{
+		assert(false);
+		throw NetworkError("OnMoreData called after headers read");
+	}
+
+	// Add the data to our buffer, and add a null-terminator so we can...
+	const size_t originalSize = m_buffer.size();
+	m_buffer.resize(m_buffer.size() + count + 1);
+	memcpy(m_buffer.data() + originalSize, data, count);
+	m_buffer.back() = 0;
+
+	// ...look in our buffer for the all-important \r\n\r\n with trusty strstr...
+	m_headersEnd = const_cast&lt;char*&gt;(strstr((const char*)m_buffer.data(), "\r\n\r\n"));
+	m_buffer.pop_back(); // strip our extra null byte now that we're done with it
+	if (m_headersEnd == nullptr)
+	{
+		// ...buffer is incomplete
+		return false;
+	}
+	else
+	{
+		// ...buffer is complete...seal it off
+		m_headersEnd[0] = '\0';
+
+		// Capture where the remainder starts and what's left, if any
+		m_remainderStart = reinterpret_cast&lt;uint8_t*&gt;(m_headersEnd) + 4;
+		m_remainderCount = m_buffer.size() - (m_remainderStart - m_buffer.data());
+		if (m_remainderCount == 0) // don't just point to any old place
+			m_remainderStart = nullptr;
+		return true;
+	}
+}
+</pre>
+
+<h2>Conclusion</h2>
+<p>
+	I hope you can integrate httplite into your Windows C++ applications
+	to enable REST communications for your inter-process or network communication needs.
+</p>
+
+<!-------------------------------    That's it!   --------------------------->
+</body>
+
+</html>
+
