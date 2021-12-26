@@ -18,6 +18,9 @@ namespace httplite
 		std::vector<std::wstring> Path;
 		std::unordered_map<std::wstring, std::wstring> Query;
 
+		// Connection variables are slid in on the server for tracking per connection data
+		std::shared_ptr<std::unordered_map<std::wstring, std::wstring>> ConnectionVariables;
+
 		virtual std::string GetTotalHeader() const;
 		virtual std::string ReadHeader(const char* headerStart);
 	};

@@ -91,6 +91,8 @@ namespace httplite
 
 	void HttpServer::ServeClient(SOCKET clientSocket)
 	{
+		// FORNOW - Use make_shared to create this straight off
+		std::shared_ptr<std::unordered_map<std::wstring, std::wstring>> connectionVariables;
 		while (m_keepRunning)
 		{
 			Request request;
@@ -109,6 +111,7 @@ namespace httplite
 			Response functionResponse;
 			try
 			{
+				request.ConnectionVariables = connectionVariables;
 				functionResponse = m_function(request);
 			}
 			catch (const std::exception& exp)

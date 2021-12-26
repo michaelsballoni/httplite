@@ -119,6 +119,8 @@ namespace httplite
 	/// <returns>vector of strings that were split by the separator</returns>
 	std::vector<std::wstring> Split(const std::wstring& str, wchar_t separator);
 
+	std::wstring Join(const std::vector<std::wstring>& strs, const wchar_t* seperator);
+
 	/// <summary>
 	/// Turn a wstring into a URL-encoded string
 	/// </summary>

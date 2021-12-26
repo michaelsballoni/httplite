@@ -55,6 +55,18 @@ std::vector<std::wstring> httplite::Split(const std::wstring& str, wchar_t separ
     return retVal;
 }
 
+std::wstring httplite::Join(const std::vector<std::wstring>& strs, const wchar_t* seperator)
+{
+    std::wstring retVal;
+    for (const auto& str : strs)
+    {
+        if (!retVal.empty())
+            retVal += seperator;
+        retVal += str;
+    }
+    return retVal;
+}
+
 std::string httplite::UrlEncode(const std::wstring& part)
 {
     std::string retVal;
