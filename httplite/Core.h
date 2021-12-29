@@ -122,6 +122,21 @@ namespace httplite
 	std::wstring Join(const std::vector<std::wstring>& strs, const wchar_t* seperator);
 
 	/// <summary>
+	/// Are two vectors identical, same size, same contents?
+	/// </summary>
+	template<typename T>
+	bool AreVecsEqual(const std::vector<T>& vec1, const std::vector<T>& vec2)
+	{
+		if (vec1.size() != vec2.size())
+			return false;
+		for (size_t v = 0; v < vec1.size(); ++v)
+		{
+			if (vec1[v] != vec2[v])
+				return false;
+		}
+		return true;
+	}
+	/// <summary>
 	/// Turn a wstring into a URL-encoded string
 	/// </summary>
 	/// <param name="part">wstring to convert</param>
