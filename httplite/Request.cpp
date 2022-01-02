@@ -120,4 +120,9 @@ namespace httplite
 
 		return std::string();
 	}
+
+	bool Request::CanHavePayload() const
+	{
+		return !(Verb == "GET" || Verb == "HEAD" || Verb == "DELETE");
+	}
 }

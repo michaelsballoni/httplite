@@ -22,5 +22,6 @@ namespace httplite
 
 		virtual std::string GetTotalHeader() const;
 		virtual std::string ReadHeader(const char* headerStart);
+		virtual bool CanHavePayload() const;
 	};
 }

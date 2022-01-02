@@ -31,6 +31,7 @@ namespace httplite
 		// Request and Response need to define header behavior
 		virtual std::string GetTotalHeader() const = 0;
 		virtual std::string ReadHeader(const char* headerStart) = 0;
+		virtual bool CanHavePayload() const = 0;
 
 	protected:
 		// Get the parts of the header that are common

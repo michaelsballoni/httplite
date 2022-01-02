@@ -85,6 +85,11 @@ namespace httplite
 		return std::string();
 	}
 
+	bool Response::CanHavePayload() const
+	{
+		return GetContentLength() > 0;
+	}
+
 	Response Response::CreateErrorResponse(uint16_t code, const std::string& msg)
 	{
 		Response response;

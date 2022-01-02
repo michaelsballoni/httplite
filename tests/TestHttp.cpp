@@ -24,6 +24,11 @@ namespace httplite
 			std::reverse(str.begin(), str.end());
 			response.Payload.emplace(str);
 		}
+		else if (request.Verb == "PUT")
+		{
+			response.Status = "403 Invalid Request";
+			// No payload
+		}
 		else
 			throw NetworkError("Unknown HTTP verb: " + request.Verb);
 		return response;
@@ -76,6 +81,22 @@ namespace httplite
 				Response postResponse = client.ProcessRequest(postRequest);
 				Assert::IsTrue(postResponse.Payload.has_value());
 				Assert::AreEqual(toWideStr("4321"), postResponse.Payload->ToString());
+			}
+		}
+
+		TEST_METHOD(TestHttpInvalidPut)
+		{
+			HttpServer server(uint16_t(16384), &HandleRequest);
+			server.StartServing();
+
+			{
+				HttpClient client("127.0.0.1", uint16_t(16384));
+				Request postRequest;
+				postRequest.Verb = "PUT";
+				postRequest.Payload.emplace(L"1234");
+				Response postResponse = client.ProcessRequest(postRequest);
+				Assert::AreEqual(std::string("403 Invalid Request"), postResponse.Status);
+				Assert::IsTrue(!postResponse.Payload.has_value());
 			}
 		}
 	};

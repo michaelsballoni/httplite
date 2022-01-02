@@ -15,6 +15,11 @@ namespace httplite
 
 		Buffer() {}
 
+		Buffer(const std::vector<uint8_t>& bytes)
+			: Bytes(bytes)
+		{
+		}
+
 		/// <summary>
 		/// Create this buffer using a wstring
 		/// </summary>

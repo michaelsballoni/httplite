@@ -1,7 +1,7 @@
 #include "pch.h"
+
 #include "MessageBase.h"
 #include "HeaderReader.h"
-#include "Request.h"
 
 namespace httplite
 {
@@ -34,8 +34,8 @@ namespace httplite
 		for (const auto& headerIt : Headers)
 			header += headerIt.first + ": " + headerIt.second + "\r\n";
 
-		if (Payload.has_value() && Headers.find("Content-Length") == Headers.end())
-			header += "Content-Length: " + num2str(static_cast<double>(Payload->Bytes.size())) + "\r\n";
+		if (Headers.find("Content-Length") == Headers.end())
+			header += "Content-Length: " + num2str(static_cast<double>(Payload.has_value() ? Payload->Bytes.size() : 0)) + "\r\n";
 
 		if (Headers.find("Connection") == Headers.end())
 			header += "Connection: keep-alive\r\n";
@@ -72,29 +72,19 @@ namespace httplite
 		bool isConnectionClose = IsConnectionClose();
 		int64_t contentLength = GetContentLength();
 
-		bool isNoPayloadRequest =
-			typeid(*this) == typeid(Request)
-			&&
-			(
-				static_cast<Request*>(this)->Verb == "GET"
-				||
-				static_cast<Request*>(this)->Verb == "DELETE"
-			);
-
 		bool willReadPayload =
-			!isNoPayloadRequest
-			&&
 			(
 				remainderSize > 0
 				||
 				contentLength > 0
 				||
-				isConnectionClose
+				CanHavePayload()
 			);
 		if (!willReadPayload)
 			return std::string();
 
-		Payload.emplace();
+		if (!Payload.has_value())
+			Payload.emplace();
 		std::vector<uint8_t>& requestPayloadBytes = Payload->Bytes;
 
 		if (contentLength > 0)
@@ -102,8 +92,8 @@ namespace httplite
 
 		if (remainderSize > 0)
 		{
-			Payload->Bytes.resize(remainderSize);
-			memcpy(Payload->Bytes.data(), remainderBytes, remainderSize);
+			requestPayloadBytes.resize(remainderSize);
+			memcpy(requestPayloadBytes.data(), remainderBytes, remainderSize);
 		}
 
 		size_t recvYet = remainderSize;
