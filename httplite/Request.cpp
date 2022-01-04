@@ -83,12 +83,12 @@ namespace httplite
 
 		headerStart = headerEnd + 2;
 
-		while (true)
+		while (headerStart != nullptr && *headerStart != '\0')
 		{
 			headerEnd = strstr(headerStart, "\r\n");
 			if (headerEnd == nullptr)
-				break;
-
+				headerEnd = headerStart + strlen(headerStart);
+	
 			std::string line(headerStart, headerEnd);
 			if (line.empty())
 				break;
@@ -123,6 +123,6 @@ namespace httplite
 
 	bool Request::CanHavePayload() const
 	{
-		return !(Verb == "GET" || Verb == "HEAD" || Verb == "DELETE");
+		return !(Verb == "GET" || Verb == "HEAD");
 	}
 }

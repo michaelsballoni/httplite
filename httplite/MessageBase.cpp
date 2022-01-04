@@ -8,13 +8,10 @@ namespace httplite
 	bool MessageBase::IsConnectionClose() const
 	{
 		const auto& headerIt = Headers.find("Connection");
-		if (headerIt == Headers.end())
-			return true;
-
-		if (toLower(headerIt->second).find("keep-alive") != std::string::npos)
-			return false;
-
-		return true;
+		return 
+			headerIt == Headers.end() 
+			|| 
+			toLower(headerIt->second).find("keep-alive") == std::string::npos;
 	}
 
 	int MessageBase::GetContentLength() const
@@ -78,7 +75,7 @@ namespace httplite
 				||
 				contentLength > 0
 				||
-				CanHavePayload()
+				(isConnectionClose && CanHavePayload())
 			);
 		if (!willReadPayload)
 			return std::string();

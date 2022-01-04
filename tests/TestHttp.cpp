@@ -29,6 +29,11 @@ namespace httplite
 			response.Status = "403 Invalid Request";
 			// No payload
 		}
+		else if (request.Verb == "DELETE")
+		{
+			response.Status = "204 File Deleted";
+			// No payload
+		}
 		else
 			throw NetworkError("Unknown HTTP verb: " + request.Verb);
 		return response;
@@ -84,19 +89,38 @@ namespace httplite
 			}
 		}
 
-		TEST_METHOD(TestHttpInvalidPut)
+		TEST_METHOD(TestHttpPuts)
 		{
 			HttpServer server(uint16_t(16384), &HandleRequest);
 			server.StartServing();
 
+			HttpClient client("127.0.0.1", uint16_t(16384));
+
+			for (int tryCount = 1; tryCount <= 3; ++tryCount)
 			{
-				HttpClient client("127.0.0.1", uint16_t(16384));
 				Request postRequest;
 				postRequest.Verb = "PUT";
 				postRequest.Payload.emplace(L"1234");
 				Response postResponse = client.ProcessRequest(postRequest);
 				Assert::AreEqual(std::string("403 Invalid Request"), postResponse.Status);
 				Assert::IsTrue(!postResponse.Payload.has_value());
+			}
+		}
+
+		TEST_METHOD(TestHttpDeletes)
+		{
+			HttpServer server(uint16_t(16384), &HandleRequest);
+			server.StartServing();
+
+			HttpClient client("127.0.0.1", uint16_t(16384));
+
+			for (int tryCount = 1; tryCount <= 3; ++tryCount)
+			{
+				Request deleteRequest;
+				deleteRequest.Verb = "DELETE";
+				Response deleteResponse = client.ProcessRequest(deleteRequest);
+				Assert::AreEqual(std::string("204 File Deleted"), deleteResponse.Status);
+				Assert::IsTrue(!deleteResponse.Payload.has_value());
 			}
 		}
 	};
