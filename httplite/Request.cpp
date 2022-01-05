@@ -123,6 +123,7 @@ namespace httplite
 
 	bool Request::CanHavePayload() const
 	{
+		// GET's and HEAD's don't have payloads
 		return !(Verb == "GET" || Verb == "HEAD");
 	}
 }

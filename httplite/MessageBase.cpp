@@ -34,7 +34,7 @@ namespace httplite
 		if (Headers.find("Content-Length") == Headers.end())
 			header += "Content-Length: " + num2str(static_cast<double>(Payload.has_value() ? Payload->Bytes.size() : 0)) + "\r\n";
 
-		if (Headers.find("Connection") == Headers.end())
+		if (Headers.find("Connection") == Headers.end()) // prefer keep-alive
 			header += "Connection: keep-alive\r\n";
 
 		return header;
