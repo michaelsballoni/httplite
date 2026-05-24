@@ -1,4 +1,5 @@
-# httplite is a C++ class library for doing HTTP client and server programming with no dependencies
+# httplite
+httplite is a C++ class library for doing HTTP client and server programming with no dependencies
 
 ## httpclient
 The httpclient directory contains a proof of concept command line HTTP client application.
